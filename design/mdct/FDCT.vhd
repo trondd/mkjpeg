@@ -104,7 +104,7 @@ architecture RTL of FDCT is
   signal rd_en             : std_logic;
   signal rd_en_d1          : std_logic;
   signal rdaddr            : unsigned(31 downto 0);
-  signal bf_dval           : std_logic_vector(2 downto 0);
+  signal bf_dval           : std_logic_vector(3 downto 0);
   signal wr_cnt            : unsigned(5 downto 0);
   signal dbuf_data         : std_logic_vector(11 downto 0);
   signal dbuf_q            : std_logic_vector(11 downto 0);
@@ -166,7 +166,7 @@ architecture RTL of FDCT is
   signal fram1_we          : std_logic;
   signal fram1_waddr       : std_logic_vector(5 downto 0);
   signal fram1_raddr       : std_logic_vector(5 downto 0);
-  signal fram1_rd_d        : std_logic_vector(7 downto 0);
+  signal fram1_rd_d        : std_logic_vector(8 downto 0);
   signal fram1_rd          : std_logic;  
   signal bf_fifo_empty_d1  : std_logic;
   signal rd_started        : std_logic;
@@ -326,7 +326,7 @@ begin
       end if;
 
       -- increment FRAM1 read address
-      if fram1_rd_d(3) = '1' then
+      if fram1_rd_d(4) = '1' then
         fram1_raddr <= std_logic_vector(unsigned(fram1_raddr) + 1);
       end if;
       
@@ -349,7 +349,7 @@ begin
     dcto1        => dcto1
 	); 
   
-  mdct_idval   <= fram1_rd_d(7);
+  mdct_idval   <= fram1_rd_d(8);
   
   R_s <= signed('0' & fram1_q(7 downto 0));
   G_s <= signed('0' & fram1_q(15 downto 8));

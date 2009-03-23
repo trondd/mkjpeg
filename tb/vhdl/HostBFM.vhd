@@ -258,11 +258,10 @@ begin
             wait until rising_edge(clk);
           end loop;
           
-          --for i in 0 to 20 loop
+          --for i in 0 to 10 loop
           --  wait until rising_edge(clk);
           --end loop;
           
-          --iram_addr <= std_logic_vector(to_unsigned(addr_inc,20));
           iram_wren <= '1';
           iram_wdata <= std_logic_vector(data_word2(23 downto 0));
           wait until rising_edge(clk);

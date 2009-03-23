@@ -72,17 +72,22 @@ end entity BUF_FIFO;
 -------------------------------------------------------------------------------
 architecture RTL of BUF_FIFO is
 
-  constant C_NUM_SUBF     : integer := ((C_MAX_LINE_WIDTH/8));
+  constant C_NUM_SUBF      : integer := C_MAX_LINE_WIDTH/8;
+  constant C_PIXEL_BITS    : integer := 24;
+  constant C_SUBF_ADDRW    : integer := 7-C_MEMORY_OPTIMIZED;
+  --constant C_LOG2_NUM_SUBF : integer := integer(log2(real(C_NUM_SUBF))); 
   
   type T_DATA_ARR is array (0 to C_NUM_SUBF-1) of std_logic_vector(23 downto 0);
   type T_CNT_ARR  is array (0 to C_NUM_SUBF-1) of 
-    std_logic_vector(7-C_MEMORY_OPTIMIZED downto 0);
+    std_logic_vector(C_SUBF_ADDRW downto 0);
+    
+  type T_FIFO_RAMADDR     is array (0 to C_NUM_SUBF-1) of 
+                            STD_LOGIC_VECTOR(C_SUBF_ADDRW-1 downto 0);
 
   signal fifo_rd          : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_wr          : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_data        : std_logic_vector(23 downto 0);
   signal fifo_data_d1     : std_logic_vector(23 downto 0);
-  signal fifo_q           : T_DATA_ARR;
   signal fifo_full        : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_empty       : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_half_full   : std_logic_vector(C_NUM_SUBF-1 downto 0);
@@ -92,7 +97,29 @@ architecture RTL of BUF_FIFO is
   signal wblock_cnt       : unsigned(12 downto 0);
   signal last_idx         : unsigned(12 downto 0);
   signal idx_reg          : unsigned(log2(C_NUM_SUBF)-1 downto 0);
+  signal wr_idx_reg       : unsigned(log2(C_NUM_SUBF)-1 downto 0);
   
+  signal ramq             : STD_LOGIC_VECTOR(C_PIXEL_BITS-1 downto 0);
+  signal ramd             : STD_LOGIC_VECTOR (C_PIXEL_BITS-1 downto 0);
+  signal ramwaddr         : STD_LOGIC_VECTOR
+                            (log2(C_NUM_SUBF)+C_SUBF_ADDRW-1 downto 0);
+  signal ramwaddr_offset  : unsigned(C_SUBF_ADDRW-1 downto 0);
+  signal ramwaddr_base    : unsigned(log2(C_NUM_SUBF)+C_SUBF_ADDRW downto 0);
+  signal ramenw           : STD_LOGIC;
+  signal ramenw_m1        : STD_LOGIC;
+  signal ramenw_m2        : STD_LOGIC;
+  signal ramraddr         : STD_LOGIC_VECTOR
+                            (log2(C_NUM_SUBF)+C_SUBF_ADDRW-1 downto 0);
+  signal ramraddr_base    : unsigned(log2(C_NUM_SUBF)+C_SUBF_ADDRW downto 0);
+  signal ramraddr_offset  : unsigned(C_SUBF_ADDRW-1 downto 0);
+  signal ramenr           : STD_LOGIC;
+  
+  signal fifo_ramwaddr    : T_FIFO_RAMADDR;
+  signal fifo_ramenw      : STD_LOGIC_VECTOR(C_NUM_SUBF-1 downto 0);
+  signal fifo_ramraddr    : T_FIFO_RAMADDR;
+  signal fifo_ramenr      : STD_LOGIC_VECTOR(C_NUM_SUBF-1 downto 0);
+  
+  signal offset_ramwaddr  : STD_LOGIC_VECTOR(C_SUBF_ADDRW-1 downto 0);
 -------------------------------------------------------------------------------
 -- Architecture: begin
 -------------------------------------------------------------------------------
@@ -103,11 +130,11 @@ begin
   -------------------------------------------------------------------
   G_SUB_FIFO : for i in 0 to C_NUM_SUBF-1 generate
     
-    U_SUB_FIFO : entity work.FIFO   
+    U_SUB_FIFO : entity work.SUB_FIFO   
     generic map
     (
-          DATA_WIDTH        => 24,
-          ADDR_WIDTH        => 7-C_MEMORY_OPTIMIZED
+          DATA_WIDTH        => C_PIXEL_BITS,
+          ADDR_WIDTH        => C_SUBF_ADDRW
     )
     port map 
     (        
@@ -115,14 +142,37 @@ begin
           clk               => CLK,
           rinc              => fifo_rd(i),
           winc              => fifo_wr(i),
-          datai             => fifo_data,
   
-          datao             => fifo_q(i),
           fullo             => fifo_full(i),
           emptyo            => fifo_empty(i),
-          count             => fifo_count(i)
+          count             => fifo_count(i),
+          
+          ramwaddr          => fifo_ramwaddr(i),
+          ramenw            => fifo_ramenw(i),
+          ramraddr          => fifo_ramraddr(i),
+          ramenr            => fifo_ramenr(i)
     );
   end generate G_SUB_FIFO;
+  
+  -------------------------------------------------------------------
+  -- RAM for SUB_FIFOs
+  -------------------------------------------------------------------
+  U_SUB_RAMZ : entity work.SUB_RAMZ
+  generic map 
+  (
+           RAMADDR_W => log2(C_NUM_SUBF)+C_SUBF_ADDRW,
+           RAMDATA_W => C_PIXEL_BITS        
+  )   
+  port map 
+  (      
+        d            => ramd,               
+        waddr        => ramwaddr,     
+        raddr        => ramraddr,     
+        we           => ramenw,     
+        clk          => clk,     
+        
+        q            => ramq     
+  ); 
   
   -------------------------------------------------------------------
   -- FIFO almost full
@@ -200,7 +250,6 @@ begin
       end loop;
     end if;
   end process;
-  
 
   -------------------------------------------------------------------
   -- Mux1
@@ -208,7 +257,6 @@ begin
   p_mux1 : process(CLK, RST)
   begin
     if RST = '1' then
-      fifo_data <= (others => '0');
       for i in 0 to C_NUM_SUBF-1 loop
         fifo_wr(i) <= '0';
       end loop;
@@ -220,8 +268,6 @@ begin
           fifo_wr(i) <= '0';
         end if;
       end loop;
-      
-      fifo_data <= iram_wdata;
     end if;
   end process;
   
@@ -232,30 +278,79 @@ begin
   begin
     if RST = '1' then
       for i in 0 to C_NUM_SUBF-1 loop
-        fifo_rd(i)    <= '0';
+        fifo_rd(i)      <= '0';
       end loop;
-      fdct_fifo_empty <= '0';
-      fdct_fifo_q     <= (others => '0');
-      fdct_fifo_hf_full    <= '0';
-      idx_reg              <= (others => '0');
+      fdct_fifo_empty   <= '0';
+      fdct_fifo_hf_full <= '0';
+      idx_reg           <= (others => '0');
     elsif CLK'event and CLK = '1' then
       idx_reg <= unsigned(fdct_block_cnt(log2(C_NUM_SUBF)-1 downto 0));
     
       for i in 0 to C_NUM_SUBF-1 loop
         if idx_reg = i then
-          fifo_rd(i)      <= fdct_fifo_rd;
+          fifo_rd(i) <= fdct_fifo_rd;
         else
           fifo_rd(i) <= '0';
         end if;
       end loop;
 
       fdct_fifo_empty   <= fifo_empty(to_integer(idx_reg));
-      fdct_fifo_q       <= fifo_q(to_integer(idx_reg));
       fdct_fifo_hf_full <= fifo_half_full(to_integer(idx_reg));
     end if;
   end process;
   
+  fdct_fifo_q  <= ramq;
   
+  -------------------------------------------------------------------
+  -- Mux3
+  -------------------------------------------------------------------
+  p_mux3 : process(CLK, RST)
+  begin
+    if RST = '1' then
+      ramwaddr         <= (others => '0');
+      ramwaddr_offset  <= (others => '0');
+      ramwaddr_base    <= (others => '0');
+      ramenw           <= '0';
+      ramenw_m1        <= '0';
+      wr_idx_reg       <= (others => '0');
+      ramd             <= (others => '0');
+      fifo_data        <= (others => '0');
+      fifo_data_d1     <= (others => '0');
+    elsif CLK'event and CLK = '1' then
+      wr_idx_reg    <= unsigned(wblock_cnt(log2(C_NUM_SUBF)-1 downto 0));
+      
+      fifo_data    <= iram_wdata;
+      fifo_data_d1 <= fifo_data;
+      ramd         <= fifo_data_d1;
+      
+      ramenw_m1 <= fifo_ramenw(to_integer(wr_idx_reg));
+      ramenw    <= ramenw_m1;
+      
+      ramwaddr_offset <= unsigned(fifo_ramwaddr(to_integer(wr_idx_reg)));
+      ramwaddr_base   <= to_unsigned(2**C_SUBF_ADDRW, C_SUBF_ADDRW+1) *
+                         wr_idx_reg;
+      ramwaddr  <= std_logic_vector(ramwaddr_base(ramwaddr'range) + 
+                  resize(ramwaddr_offset, ramwaddr'length));
+    end if;
+  end process;
+  
+  -------------------------------------------------------------------
+  -- Mux4
+  -------------------------------------------------------------------
+  p_mux4 : process(CLK, RST)
+  begin
+    if RST = '1' then
+      ramraddr          <= (others => '0');
+      ramraddr_base     <= (others => '0');
+      ramraddr_offset   <= (others => '0');
+    elsif CLK'event and CLK = '1' then
+      ramraddr_offset <= unsigned(fifo_ramraddr(to_integer(idx_reg)));
+      ramraddr_base   <= to_unsigned(2**C_SUBF_ADDRW, C_SUBF_ADDRW+1) *
+                         idx_reg;
+      ramraddr <= std_logic_vector(ramraddr_base(ramraddr'range) + 
+                  resize(unsigned(ramraddr_offset), ramraddr'length));
+    end if;
+  end process;
 
 end architecture RTL;
 -------------------------------------------------------------------------------

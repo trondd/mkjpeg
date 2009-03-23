@@ -35,6 +35,8 @@ vcom ../design/common/SingleSM.VHD
 vcom vhdl/DCT_TROM.vhd
 
 # buffifo
+vcom ../design/buffifo/SUB_RAMZ.vhd
+vcom ../design/buffifo/SUB_FIFO.vhd
 vcom ../design/buffifo/Buf_Fifo.vhd
 
 # fdct
