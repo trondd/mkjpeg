@@ -197,11 +197,7 @@ begin
             fifo_almost_full <= '0';
           end if;
         else
-           if unsigned(fifo_count(to_integer(last_idx))) = to_unsigned(64,8) then
-            fifo_almost_full <= '1';
-          else
-            fifo_almost_full <= '0';
-          end if;
+          fifo_almost_full <= fifo_full(to_integer(last_idx));
         end if;
       end if;      
     end if;
@@ -242,10 +238,14 @@ begin
       end loop;
     elsif CLK'event and CLK = '1' then
       for i in 0 to C_NUM_SUBF-1 loop
-        if unsigned(fifo_count(i)) >= 64 then
-          fifo_half_full(i) <= '1';
+        if C_MEMORY_OPTIMIZED = 0 then
+          if unsigned(fifo_count(i)) >= 64 then
+            fifo_half_full(i) <= '1';
+          else
+            fifo_half_full(i) <= '0';
+          end if;
         else
-          fifo_half_full(i) <= '0';
+          fifo_half_full(i) <= fifo_full(i);
         end if;
       end loop;
     end if;
