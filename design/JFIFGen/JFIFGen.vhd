@@ -58,7 +58,7 @@ entity JFIFGen is
         
         -- HOST IF
         qwren              : in  std_logic;
-        qwaddr             : in  std_logic_vector(5 downto 0);
+        qwaddr             : in  std_logic_vector(6 downto 0);
         qwdata             : in  std_logic_vector(7 downto 0);
         image_size_reg     : in  std_logic_vector(31 downto 0);
         image_size_reg_wr  : in  std_logic;
@@ -83,6 +83,8 @@ architecture RTL of JFIFGen is
   constant C_SIZE_X_L  : integer := 28;  
   
   constant C_EOI       : std_logic_vector(15 downto 0) := X"FFD9";
+  constant C_QLUM_BASE : integer := 44;
+  constant C_QCHR_BASE : integer := 44+69;
   
 
   signal hr_data      : std_logic_vector(7 downto 0);
@@ -178,8 +180,17 @@ begin
         end if;
       -- write Quantization table
       elsif qwren = '1' then
-        hr_waddr <= std_logic_vector( resize(unsigned(qwaddr),hr_waddr'length) + 
-                    to_unsigned(44,hr_waddr'length));
+        -- luminance table select
+        if qwaddr(6) = '0' then
+          hr_waddr <= std_logic_vector
+                        ( resize(unsigned(qwaddr(5 downto 0)),hr_waddr'length) + 
+                          to_unsigned(C_QLUM_BASE,hr_waddr'length));
+        else
+          -- chrominance table select
+          hr_waddr <= std_logic_vector
+                        ( resize(unsigned(qwaddr(5 downto 0)),hr_waddr'length) + 
+                          to_unsigned(C_QCHR_BASE,hr_waddr'length));
+        end if;
         hr_we   <= '1';
         hr_data <= qwdata;
       end if;

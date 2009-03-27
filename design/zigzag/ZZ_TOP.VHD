@@ -34,7 +34,8 @@ library ieee;
 -------------------------------------------------------------------------------
 -- user packages/libraries:
 -------------------------------------------------------------------------------
-
+library work;
+  use work.JPEG_PKG.all;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 ----------------------------------- ENTITY ------------------------------------
@@ -48,6 +49,7 @@ entity ZZ_TOP is
         -- CTRL
         start_pb           : in  std_logic;
         ready_pb           : out std_logic;
+        zig_sm_settings    : in  T_SM_SETTINGS;
         
         -- RLE
         rle_buf_sel        : in  std_logic;
@@ -62,7 +64,7 @@ entity ZZ_TOP is
         
         -- HOST
         qdata              : in  std_logic_vector(7 downto 0);
-        qaddr              : in  std_logic_vector(5 downto 0);
+        qaddr              : in  std_logic_vector(6 downto 0);
         qwren              : in  std_logic
     );
 end entity ZZ_TOP;
@@ -138,7 +140,7 @@ begin
   generic map
     ( 
       SIZE_C        => 12,
-      RAMQADDR_W    => 6,
+      RAMQADDR_W    => 7,
       RAMQDATA_W    => 8
     )
   port map
@@ -150,6 +152,7 @@ begin
       qdata    => qdata,
       qwaddr   => qaddr,
       qwren    => qwren,
+      cmp_idx  => zig_sm_settings.cmp_idx,
     
       do       => quant_dout,
       dovalid  => quant_dovalid

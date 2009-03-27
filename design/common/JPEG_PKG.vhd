@@ -27,12 +27,12 @@ library IEEE;
 package JPEG_PKG is
 
   -- do not change, constant
-  constant C_HDR_SIZE         : integer := 338;
+  constant C_HDR_SIZE         : integer := 407;
   
   -- warning! this parameter heavily affects memory size required
   -- if expected image width is known change this parameter to match this
   -- otherwise some onchip RAM will be wasted and never used
-  constant C_MAX_LINE_WIDTH   : integer := 1024;
+  constant C_MAX_LINE_WIDTH   : integer := 640;
 
   -- 0=highest clock per pixel performance
   -- 1=memory used by BUF_FIFO halved, speed performance reduced by circa 18%

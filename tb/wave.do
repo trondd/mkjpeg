@@ -414,21 +414,26 @@ add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_zigzag/fifo_dat
 add wave -noupdate -divider quantizer
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/rst
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/clk
-add wave -noupdate -format Literal -radix decimal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/di
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/di
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/divalid
-add wave -noupdate -format Literal -radix decimal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/qdata
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/qwaddr
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/qwren
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/cmp_idx
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/dovalid
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/romaddr_s
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/slv_romaddr_s
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/romdatao_s
-add wave -noupdate -format Literal -radix decimal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/di_d1
-add wave -noupdate -format Literal -radix unsigned /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/divisor_s
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/divisor_s
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/remainder_s
-add wave -noupdate -format Literal -radix decimal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do_s
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do_s
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/round_s
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/sign_bit_pipe
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/di_d1
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/pipeline_reg
-add wave -noupdate -format Literal -radix decimal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do_rdiv
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/sign_bit_pipe
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/do_rdiv
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/table_select
 add wave -noupdate -divider r_divider
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/r_divider/rst
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_zz_top/u_quantizer/r_divider/clk
@@ -655,7 +660,7 @@ add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_outmux/ram_byte
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_outmux/ram_wren
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_outmux/ram_wraddr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 4} {4522517 ps} 0}
+WaveRestoreCursors {{Cursor 4} {45000815232 ps} 0}
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 55
 configure wave -justifyvalue left
@@ -670,4 +675,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {4322687 ps} {4579293 ps}
+WaveRestoreZoom {45000756225 ps} {45001012831 ps}

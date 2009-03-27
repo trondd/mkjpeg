@@ -79,7 +79,7 @@ end entity JpegEnc;
 architecture RTL of JpegEnc is
 
   signal qdata              : std_logic_vector(7 downto 0);
-  signal qaddr              : std_logic_vector(5 downto 0);
+  signal qaddr              : std_logic_vector(6 downto 0);
   signal qwren              : std_logic;
   signal jpeg_ready         : std_logic;
   signal jpeg_busy          : std_logic;
@@ -310,6 +310,7 @@ begin
         -- CTRL
         start_pb           => zig_start,
         ready_pb           => zig_ready,
+        zig_sm_settings    => zig_sm_settings,
 
         -- RLE
         rle_buf_sel        => rle_buf_sel,

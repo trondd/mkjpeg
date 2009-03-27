@@ -41,7 +41,7 @@ entity HostIF is
         
         -- Quantizer RAM
         qdata              : out std_logic_vector(7 downto 0);
-        qaddr              : out std_logic_vector(5 downto 0);
+        qaddr              : out std_logic_vector(6 downto 0);
         qwren              : out std_logic;
         
         -- CTRL
@@ -75,8 +75,10 @@ architecture RTL of HostIF is
   constant C_ENC_STS_REG          : std_logic_vector(31 downto 0) := X"0000_000C";
   constant C_COD_DATA_ADDR_REG    : std_logic_vector(31 downto 0) := X"0000_0010";
   constant C_ENC_LENGTH_REG       : std_logic_vector(31 downto 0) := X"0000_0014";
-  constant C_QUANTIZER_RAM        : std_logic_vector(31 downto 0) := 
+  constant C_QUANTIZER_RAM_LUM    : std_logic_vector(31 downto 0) := 
                                       X"0000_01" & "------00";
+  constant C_QUANTIZER_RAM_CHR    : std_logic_vector(31 downto 0) := 
+                                      X"0000_02" & "------00";
   constant C_IMAGE_RAM            : std_logic_vector(31 downto 0) := 
                                       X"001" & "------------------00";
   
@@ -91,8 +93,6 @@ architecture RTL of HostIF is
   
   signal rd_dval                  : std_logic;
   signal data_read                : std_logic_vector(31 downto 0);
-  signal quantizer_ram_q          : std_logic_vector(31 downto 0);
-  signal image_ram_q              : std_logic_vector(31 downto 0);
   signal write_done               : std_logic;
   signal OPB_select_d             : std_logic;
   
@@ -104,10 +104,6 @@ begin
   OPB_retry    <= '0';
   OPB_toutSup  <= '0';
   OPB_errAck   <= '0';
-  
-  -- temporary!!
-  quantizer_ram_q <= (others => '0');
-  image_ram_q     <= (others => '0');
   
   img_size_x <= image_size_reg(31 downto 16);
   img_size_y <= image_size_reg(15 downto 0);
@@ -229,12 +225,20 @@ begin
               null;
           end case;
           
-          if std_match(OPB_ABus, C_QUANTIZER_RAM) then
+          if std_match(OPB_ABus, C_QUANTIZER_RAM_LUM) then
             qdata      <= OPB_DBus_in(qdata'range);
-            qaddr      <= OPB_ABus(qaddr'high+2 downto 2);
+            qaddr      <= '0' & OPB_ABus(qaddr'high+2-1 downto 2);
             qwren      <= '1';
             write_done <= '1';
           end if;
+          
+          if std_match(OPB_ABus, C_QUANTIZER_RAM_CHR) then
+            qdata      <= OPB_DBus_in(qdata'range);
+            qaddr      <= '1' & OPB_ABus(qaddr'high+2-1 downto 2);
+            qwren      <= '1';
+            write_done <= '1';
+          end if;
+          
         end if;
       end if;
       

@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 --                                                                            --
 --                          V H D L    F I L E                                --
---                          COPYRIGHT (C) 2006                                --
+--                          COPYRIGHT (C) 2006-2009                           --
 --                                                                            --
 --------------------------------------------------------------------------------
 --                                                                            --
@@ -16,8 +16,6 @@
 --                                                                            --
 --------------------------------------------------------------------------------
 --                                                                            --
---  Description : Pipelined DCT Quantizer                                     --
---  Pipeline delay: 2*SIZE_C+INTERN_PIPE_C                                    --
 --------------------------------------------------------------------------------
 
 --------------------------------------------------------------------------------
@@ -30,7 +28,7 @@ entity quantizer is
   generic 
     ( 
       SIZE_C        : INTEGER := 12;
-      RAMQADDR_W    : INTEGER := 6;
+      RAMQADDR_W    : INTEGER := 7;
       RAMQDATA_W    : INTEGER := 8
     );
   port
@@ -40,8 +38,9 @@ entity quantizer is
       di         : in  STD_LOGIC_VECTOR(SIZE_C-1 downto 0);
       divalid    : in  STD_LOGIC;
       qdata      : in  std_logic_vector(7 downto 0);
-      qwaddr     : in  std_logic_vector(5 downto 0);
+      qwaddr     : in  std_logic_vector(6 downto 0);
       qwren      : in  std_logic;
+      cmp_idx    : in  unsigned(1 downto 0);
                  
       do         : out STD_LOGIC_VECTOR(SIZE_C-1 downto 0);
       dovalid    : out STD_LOGIC
@@ -52,7 +51,7 @@ architecture rtl of quantizer is
   
   constant INTERN_PIPE_C : INTEGER := 3;
   
-  signal romaddr_s     : UNSIGNED(RAMQADDR_W-1 downto 0);
+  signal romaddr_s     : UNSIGNED(RAMQADDR_W-2 downto 0);
   signal slv_romaddr_s : STD_LOGIC_VECTOR(RAMQADDR_W-1 downto 0);
   signal romdatao_s    : STD_LOGIC_VECTOR(RAMQDATA_W-1 downto 0);
   signal divisor_s     : STD_LOGIC_VECTOR(SIZE_C-1 downto 0);
@@ -64,6 +63,8 @@ architecture rtl of quantizer is
   signal pipeline_reg  : STD_LOGIC_VECTOR(4 downto 0);
   signal sign_bit_pipe : std_logic_vector(SIZE_C+INTERN_PIPE_C+1-1 downto 0);  
   signal do_rdiv       : STD_LOGIC_VECTOR(SIZE_C-1 downto 0);
+  signal table_select  : std_logic;
+  
 begin
   
   ----------------------------
@@ -86,25 +87,7 @@ begin
       q           => romdatao_s
     );
   
-  ----------------------------
-  -- S_DIVIDER
-  ----------------------------
-  --U_S_DIVIDER : entity work.s_divider
-  --  generic map
-  --  ( 
-  --     SIZE_C => SIZE_C 
-  --  )            
-  --  port map
-  --  (
-  --     rst         => rst,
-  --     clk         => clk,
-  --     a           => di_d1,
-  --     d           => divisor_s,
-  --     
-  --     q           => do_s,    
-  --     r           => remainder_s, -- if ever used, needs to be 1T delayed
-  --     round       => round_s
-  --  ); 
+
   
   divisor_s(RAMQDATA_W-1 downto 0)      <= romdatao_s;
   divisor_s(SIZE_C-1 downto RAMQDATA_W) <= (others => '0');
@@ -120,32 +103,27 @@ begin
        q     => do_s
   ) ;
   do <= do_s;
-  slv_romaddr_s <= STD_LOGIC_VECTOR(romaddr_s);
+  slv_romaddr_s <= table_select & STD_LOGIC_VECTOR(romaddr_s);
   
   ------------------------------
-  ---- round to nearest integer
+  -- Quantization sub table select
   ------------------------------
-  --process(clk)
-  --begin
-  --  if clk = '1' and clk'event then
-  --    if rst = '1' then
-  --      do <= (others => '0');
-  --    else
-  --      -- round to nearest integer?
-  --      if round_s = '1' then
-  --        -- negative number, subtract 1
-  --        if sign_bit_pipe(sign_bit_pipe'length-1) = '1' then
-  --          do <= STD_LOGIC_VECTOR(SIGNED(do_s)-TO_SIGNED(1,SIZE_C));
-  --        -- positive number, add 1
-  --        else
-  --          do <= STD_LOGIC_VECTOR(SIGNED(do_s)+TO_SIGNED(1,SIZE_C));
-  --        end if;
-  --      else
-  --        do <= do_s;
-  --      end if;
-  --    end if; 
-  --  end if;
-  --end process;
+  process(clk)
+  begin
+    if clk = '1' and clk'event then
+      if rst = '1' then
+        table_select <= '0';
+      else
+        -- luminance table select
+        if cmp_idx = 0 then
+          table_select <= '0';
+        -- chrominance table select
+        else
+          table_select <= '1';
+        end if;
+      end if; 
+    end if;
+  end process;
   
   ----------------------------
   -- address incrementer
@@ -160,7 +138,7 @@ begin
         sign_bit_pipe <= (others => '0');
       else
         if divalid = '1' then
-          romaddr_s <= romaddr_s + TO_UNSIGNED(1,RAMQADDR_W);
+          romaddr_s <= romaddr_s + TO_UNSIGNED(1,romaddr_s'length);
         end if;
         
         pipeline_reg <= pipeline_reg(pipeline_reg'length-2 downto 0) & divalid;
