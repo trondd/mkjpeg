@@ -27,7 +27,7 @@ library IEEE;
 package JPEG_PKG is
 
   -- do not change, constant
-  constant C_HDR_SIZE         : integer := 407;
+  constant C_HDR_SIZE         : integer := 623;
   
   -- warning! this parameter heavily affects memory size required
   -- if expected image width is known change this parameter to match this

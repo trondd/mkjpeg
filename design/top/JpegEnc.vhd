@@ -406,6 +406,7 @@ begin
         -- CTRL
         start_pb           => huf_start,
         ready_pb           => huf_ready,
+        huf_sm_settings    => huf_sm_settings,
 
         -- HOST IF
         sof                => sof,
@@ -422,7 +423,6 @@ begin
         d_val              => huf_dval,
         rle_fifo_empty     => huf_fifo_empty,
         
-
         -- Byte Stuffer
         bs_buf_sel         => bs_buf_sel,
         bs_fifo_empty      => bs_fifo_empty,

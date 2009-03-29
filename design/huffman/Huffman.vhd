@@ -34,7 +34,8 @@ library ieee;
 -------------------------------------------------------------------------------
 -- user packages/libraries:
 -------------------------------------------------------------------------------
-
+library work;
+  use work.JPEG_PKG.all;
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 ----------------------------------- ENTITY ------------------------------------
@@ -48,6 +49,7 @@ entity Huffman is
         -- CTRL
         start_pb           : in  std_logic;
         ready_pb           : out std_logic;
+        huf_sm_settings    : in  T_SM_SETTINGS;
         
         -- HOST IF
         sof                : in  std_logic;
@@ -121,6 +123,10 @@ architecture RTL of Huffman is
   signal rd_en_s           : std_logic;
   signal pad_byte          : std_logic_vector(7 downto 0);
   signal pad_reg           : std_logic;
+  signal VLC_CR_DC_size    : std_logic_vector(3 downto 0);
+  signal VLC_CR_DC         : unsigned(10 downto 0);
+  signal VLC_CR_AC_size    : unsigned(4 downto 0);
+  signal VLC_CR_AC         : unsigned(15 downto 0);
   
 -------------------------------------------------------------------------------
 -- Architecture: begin
@@ -149,7 +155,7 @@ begin
   end process;
   
   -------------------------------------------------------------------
-  -- DC_ROM
+  -- DC_ROM Luminance
   -------------------------------------------------------------------
   U_DC_ROM : entity work.DC_ROM
   port map
@@ -163,7 +169,7 @@ begin
   );
     
   -------------------------------------------------------------------
-  -- AC_ROM
+  -- AC_ROM Luminance
   -------------------------------------------------------------------
   U_AC_ROM : entity work.AC_ROM
   port map
@@ -175,6 +181,35 @@ begin
                            
         VLC_AC_size        => VLC_AC_size,
         VLC_AC             => VLC_AC
+    );
+    
+  -------------------------------------------------------------------
+  -- DC_ROM Chrominance
+  -------------------------------------------------------------------
+  U_DC_CR_ROM : entity work.DC_CR_ROM
+  port map
+  (
+        CLK                => CLK,
+        RST                => RST,
+        VLI_size           => VLI_size,
+                           
+        VLC_DC_size        => VLC_CR_DC_size,
+        VLC_DC             => VLC_CR_DC
+  );
+    
+  -------------------------------------------------------------------
+  -- AC_ROM Chrominance
+  -------------------------------------------------------------------
+  U_AC_CR_ROM : entity work.AC_CR_ROM
+  port map
+  (
+        CLK                => CLK,
+        RST                => RST,
+        runlength          => runlength,
+        VLI_size           => VLI_size,
+                           
+        VLC_AC_size        => VLC_CR_AC_size,
+        VLC_AC             => VLC_CR_AC
     );
    
   -------------------------------------------------------------------
@@ -210,7 +245,7 @@ begin
   end process;
   
   -------------------------------------------------------------------
-  -- mux for DC/AC ROM
+  -- mux for DC/AC ROM Luminance/Chrominance
   -------------------------------------------------------------------
   p_mux : process(CLK, RST)
   begin
@@ -218,12 +253,28 @@ begin
       VLC_size <= (others => '0');
       VLC      <= (others => '0');
     elsif CLK'event and CLK = '1' then
+      -- DC
       if first_rle_word = '1' then
-        VLC_size <= unsigned('0' & VLC_DC_size);
-        VLC      <= resize(VLC_DC, VLC'length);
+        -- luminance
+        if huf_sm_settings.cmp_idx = 0 then
+          VLC_size <= unsigned('0' & VLC_DC_size);
+          VLC      <= resize(VLC_DC, VLC'length);
+        -- chrominance
+        else
+          VLC_size <= unsigned('0' & VLC_CR_DC_size);
+          VLC      <= resize(VLC_CR_DC, VLC'length);
+        end if;
+      -- AC
       else
-        VLC_size <= VLC_AC_size;
-        VLC      <= VLC_AC;
+        -- luminance
+        if huf_sm_settings.cmp_idx = 0 then
+          VLC_size <= VLC_AC_size;
+          VLC      <= VLC_AC;
+        -- chrominance
+        else
+          VLC_size <= VLC_CR_AC_size;
+          VLC      <= VLC_CR_AC;
+        end if;
       end if;
     end if;
   end process;

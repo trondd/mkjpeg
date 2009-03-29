@@ -94,9 +94,7 @@ begin
 
   huf_buf_sel <= huf_buf_sel_s;
   huf_rd_req  <= huf_rd_req_s;
-  
-  num_enc_bytes <= std_logic_vector(wraddr);
-  
+
   -------------------------------------------------------------------
   -- CTRL_SM
   -------------------------------------------------------------------
@@ -199,6 +197,19 @@ begin
       if start_pb = '1' then
         huf_buf_sel_s <= not huf_buf_sel_s;
       end if;
+    end if;
+  end process;
+  
+  -------------------------------------------------------------------
+  -- num_enc_bytes
+  -------------------------------------------------------------------
+  p_num_enc_bytes : process(CLK, RST)
+  begin
+    if RST = '1' then
+      num_enc_bytes   <= (others => '0'); 
+    elsif CLK'event and CLK = '1' then
+      -- plus 2 for EOI marker last bytes
+      num_enc_bytes   <= std_logic_vector(wraddr + 2);
     end if;
   end process;
 

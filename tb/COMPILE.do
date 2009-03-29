@@ -74,6 +74,8 @@ vcom ../design/rle/RLE_TOP.vhd
 vcom ../design/huffman/DoubleFifo.vhd
 vcom ../design/huffman/DC_ROM.vhd
 vcom ../design/huffman/AC_ROM.vhd
+vcom ../design/huffman/DC_CR_ROM.vhd
+vcom ../design/huffman/AC_CR_ROM.vhd
 vcom ../design/huffman/Huffman.vhd
 
 # bytestuffer

@@ -81,10 +81,6 @@ architecture RTL of RLE_TOP is
   signal dbuf_q         : std_logic_vector(19 downto 0);
   signal dbuf_we        : std_logic;
 
-  signal rd_cnt         : unsigned(5 downto 0);
-  signal rd_en_d        : std_logic_vector(5 downto 0);
-  signal rd_en          : std_logic;
-  
   signal rle_runlength  : std_logic_vector(3 downto 0);
   signal rle_size       : std_logic_vector(3 downto 0);
   signal rle_amplitude  : std_logic_vector(11 downto 0);
@@ -102,7 +98,6 @@ architecture RTL of RLE_TOP is
 -------------------------------------------------------------------------------
 begin
 
-  qua_rd_addr   <= std_logic_vector(rd_cnt);
   huf_runlength <= dbuf_q(19 downto 16);
   huf_size      <= dbuf_q(15 downto 12);
   huf_amplitude <= dbuf_q(11 downto 0);
@@ -122,7 +117,6 @@ begin
       rst        => RST,
       clk        => CLK,
       di         => rle_di,
-      divalid    => rle_divalid,
       start_pb   => start_pb,
       sof        => sof,
       rle_sm_settings => rle_sm_settings,
@@ -130,11 +124,11 @@ begin
       runlength  => rle_runlength,
       size       => rle_size,
       amplitude  => rle_amplitude,
-      dovalid    => rle_dovalid  
+      dovalid    => rle_dovalid,
+      rd_addr    => qua_rd_addr
     ); 
     
   rle_di      <= qua_data;
-  rle_divalid <= rd_en_d(0);
   
   -------------------------------------------------------------------
   -- Double Fifo
@@ -157,34 +151,7 @@ begin
   dbuf_we    <= rle_dovalid;
   
   
-  -------------------------------------------------------------------
-  -- Counter1
-  -------------------------------------------------------------------
-  p_counter1 : process(CLK, RST)
-  begin
-    if RST = '1' then
-      rd_en        <= '0';
-      rd_en_d      <= (others => '0');
-      rd_cnt       <= (others => '0');
-    elsif CLK'event and CLK = '1' then
-      rd_en_d <= rd_en_d(rd_en_d'length-2 downto 0) & rd_en;
-    
-      if start_pb = '1' then
-        rd_cnt <= (others => '0');
-        rd_en <= '1';       
-      end if;
-      
-      if rd_en = '1' then
-        if rd_cnt = 64-1 then
-          rd_cnt <= (others => '0');
-          rd_en  <= '0';
-        else
-          rd_cnt <= rd_cnt + 1;
-        end if;
-      end if;
-      
-    end if;
-  end process;
+  
   
   -------------------------------------------------------------------
   -- ready_pb

@@ -88,17 +88,17 @@ architecture RTL of JFIFGen is
   
 
   signal hr_data      : std_logic_vector(7 downto 0);
-  signal hr_waddr     : std_logic_vector(8 downto 0);
-  signal hr_raddr     : std_logic_vector(8 downto 0);
+  signal hr_waddr     : std_logic_vector(9 downto 0);
+  signal hr_raddr     : std_logic_vector(9 downto 0);
   signal hr_we        : std_logic;
   signal hr_q         : std_logic_vector(7 downto 0);
   signal size_wr_cnt  : unsigned(2 downto 0);
   signal size_wr      : std_logic;
-  signal rd_cnt       : unsigned(8 downto 0);
+  signal rd_cnt       : unsigned(9 downto 0);
   signal rd_en        : std_logic;
   signal rd_en_d1     : std_logic;
-  signal rd_cnt_d1    : unsigned(8 downto 0);
-  signal rd_cnt_d2    : unsigned(8 downto 0);
+  signal rd_cnt_d1    : unsigned(rd_cnt'range);
+  signal rd_cnt_d2    : unsigned(rd_cnt'range);
   signal eoi_cnt      : unsigned(1 downto 0);
   signal eoi_wr       : std_logic;
   signal eoi_wr_d1    : std_logic;
@@ -114,7 +114,7 @@ begin
   U_Header_RAM : entity work.RAMZ
   generic map
   ( 
-      RAMADDR_W     => 9,
+      RAMADDR_W     => 10,
       RAMDATA_W     => 8
   )
   port map
