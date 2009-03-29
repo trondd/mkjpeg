@@ -1,13 +1,13 @@
 -------------------------------------------------------------------------------
--- File Name : RLE_TOP.vhd
+-- File Name :  QUANT_TOP.vhd
 --
 -- Project   : JPEG_ENC
 --
--- Module    : RLE_TOP
+-- Module    : QUANT_TOP
 --
--- Content   : Run Length Encoder top level
+-- Content   : Quantizer Top level
 --
--- Description : 
+-- Description : Quantizer Top level
 --
 -- Spec.     : 
 --
@@ -15,7 +15,7 @@
 --
 -------------------------------------------------------------------------------
 -- History :
--- 20090301: (MK): Initial Creation.
+-- 20090328: (MK): Initial Creation.
 -------------------------------------------------------------------------------
 
 -------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ library work;
 ----------------------------------- ENTITY ------------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-entity RLE_TOP is
+entity QUANT_TOP is
   port 
   (
         CLK                : in  std_logic;
@@ -49,113 +49,110 @@ entity RLE_TOP is
         -- CTRL
         start_pb           : in  std_logic;
         ready_pb           : out std_logic;
-        rle_sm_settings    : in T_SM_SETTINGS;
+        qua_sm_settings    : in  T_SM_SETTINGS;
         
-        -- HUFFMAN
-        huf_buf_sel        : in  std_logic;
-        huf_rden           : in  std_logic;
-        huf_runlength      : out std_logic_vector(3 downto 0);
-        huf_size           : out std_logic_vector(3 downto 0);
-        huf_amplitude      : out std_logic_vector(11 downto 0);
-        huf_dval           : out std_logic;
-        huf_fifo_empty     : out std_logic;
+        -- RLE
+        rle_buf_sel        : in  std_logic;
+        rle_rdaddr         : in  std_logic_vector(5 downto 0);
+        rle_data           : out std_logic_vector(11 downto 0);
         
-        -- Quantizer
-        qua_buf_sel        : out std_logic;
-        qua_rd_addr        : out std_logic_vector(5 downto 0);
-        qua_data           : in  std_logic_vector(11 downto 0);
+        -- ZIGZAG
+        zig_buf_sel        : out std_logic;
+        zig_rd_addr        : out std_logic_vector(5 downto 0);
+        zig_data           : in  std_logic_vector(11 downto 0);
         
-        -- HostIF
-        sof                : in  std_logic
+        -- HOST
+        qdata              : in  std_logic_vector(7 downto 0);
+        qaddr              : in  std_logic_vector(6 downto 0);
+        qwren              : in  std_logic
     );
-end entity RLE_TOP;
+end entity QUANT_TOP;
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 ----------------------------------- ARCHITECTURE ------------------------------
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
-architecture RTL of RLE_TOP is
+architecture RTL of QUANT_TOP is
 
-  signal dbuf_data      : std_logic_vector(19 downto 0);
-  signal dbuf_q         : std_logic_vector(19 downto 0);
+  signal dbuf_data      : std_logic_vector(11 downto 0);
+  signal dbuf_q         : std_logic_vector(11 downto 0);
   signal dbuf_we        : std_logic;
-
+  signal dbuf_waddr     : std_logic_vector(6 downto 0);
+  signal dbuf_raddr     : std_logic_vector(6 downto 0);
+  signal zigzag_di      : std_logic_vector(11 downto 0);
+  signal zigzag_divalid : std_logic;
+  signal quant_dout     : std_logic_vector(11 downto 0);
+  signal quant_dovalid  : std_logic;
+  signal wr_cnt         : unsigned(5 downto 0);
   signal rd_cnt         : unsigned(5 downto 0);
   signal rd_en_d        : std_logic_vector(5 downto 0);
   signal rd_en          : std_logic;
-  
-  signal rle_runlength  : std_logic_vector(3 downto 0);
-  signal rle_size       : std_logic_vector(3 downto 0);
-  signal rle_amplitude  : std_logic_vector(11 downto 0);
-  signal rle_dovalid    : std_logic;
-  signal rle_di         : std_logic_vector(11 downto 0);
-  signal rle_divalid    : std_logic;
-  
-  signal qua_buf_sel_s  : std_logic;
-  signal huf_dval_p0    : std_logic;
-  
-  signal wr_cnt         : unsigned(5 downto 0);
+  signal zig_buf_sel_s  : std_logic;
+  signal zz_rd_addr     : std_logic_vector(5 downto 0);
+  signal fifo_empty     : std_logic;
   
 -------------------------------------------------------------------------------
 -- Architecture: begin
 -------------------------------------------------------------------------------
 begin
 
-  qua_rd_addr   <= std_logic_vector(rd_cnt);
-  huf_runlength <= dbuf_q(19 downto 16);
-  huf_size      <= dbuf_q(15 downto 12);
-  huf_amplitude <= dbuf_q(11 downto 0);
-  qua_buf_sel   <= qua_buf_sel_s;
-
+  zig_rd_addr <= std_logic_vector(rd_cnt);
+  rle_data     <= dbuf_q;
+  zig_buf_sel <= zig_buf_sel_s;
+  
+  zigzag_di      <= zig_data;
+  zigzag_divalid <= rd_en_d(0);
+  
   -------------------------------------------------------------------
-  -- RLE Core
+  -- Quantizer
   -------------------------------------------------------------------
-  U_rle : entity work.rle
+  U_quantizer : entity work.quantizer
   generic map
     ( 
-      RAMADDR_W  => 6,
-      RAMDATA_W  => 12
+      SIZE_C        => 12,
+      RAMQADDR_W    => 7,
+      RAMQDATA_W    => 8
     )
   port map
     (
-      rst        => RST,
-      clk        => CLK,
-      di         => rle_di,
-      divalid    => rle_divalid,
-      start_pb   => start_pb,
-      sof        => sof,
-      rle_sm_settings => rle_sm_settings,
-
-      runlength  => rle_runlength,
-      size       => rle_size,
-      amplitude  => rle_amplitude,
-      dovalid    => rle_dovalid  
-    ); 
+      rst      => RST,
+      clk      => CLK,
+      di       => zigzag_di,
+      divalid  => zigzag_divalid,
+      qdata    => qdata,
+      qwaddr   => qaddr,
+      qwren    => qwren,
+      cmp_idx  => qua_sm_settings.cmp_idx,
     
-  rle_di      <= qua_data;
-  rle_divalid <= rd_en_d(0);
+      do       => quant_dout,
+      dovalid  => quant_dovalid
+    ); 
   
   -------------------------------------------------------------------
-  -- Double Fifo
+  -- DBUF
   -------------------------------------------------------------------
-  U_RleDoubleFifo : entity work.RleDoubleFifo
+  U_RAMZ : entity work.RAMZ
+  generic map
+  ( 
+      RAMADDR_W     => 7,
+      RAMDATA_W     => 12
+  )
   port map
-  (
-        CLK                => CLK,
-        RST                => RST,
-        -- RLE
-        data_in            => dbuf_data,
-        wren               => dbuf_we,
-        -- HUFFMAN
-        buf_sel            => huf_buf_sel,
-        rd_req             => huf_rden,
-        fifo_empty         => huf_fifo_empty,
-        data_out           => dbuf_q
-    );
-  dbuf_data  <= rle_runlength & rle_size & rle_amplitude;
-  dbuf_we    <= rle_dovalid;
+  (      
+        d           => dbuf_data,
+        waddr       => dbuf_waddr,
+        raddr       => dbuf_raddr,
+        we          => dbuf_we,
+        clk         => CLK,
+                    
+        q           => dbuf_q
+  ); 
   
+  dbuf_data  <= quant_dout;
+  dbuf_waddr <= (not rle_buf_sel) & std_logic_vector(wr_cnt);
+  dbuf_we    <= quant_dovalid;
+  dbuf_raddr <= rle_buf_sel & rle_rdaddr;
   
   -------------------------------------------------------------------
   -- Counter1
@@ -187,68 +184,46 @@ begin
   end process;
   
   -------------------------------------------------------------------
-  -- ready_pb
+  -- wr_cnt
   -------------------------------------------------------------------
-  p_ready_pb : process(CLK, RST)
+  p_wr_cnt : process(CLK, RST)
   begin
     if RST = '1' then
-      ready_pb <= '0';
       wr_cnt   <= (others => '0');
+      ready_pb <= '0';
     elsif CLK'event and CLK = '1' then
       ready_pb <= '0';
-      
+    
       if start_pb = '1' then
         wr_cnt <= (others => '0');
       end if;
       
-      -- detect EOB (0,0) - end of RLE block
-      if rle_dovalid = '1' then
-      
-        -- ZERO EXTENSION
-        if unsigned(rle_runlength) = 15 and unsigned(rle_size) = 0 then
-          wr_cnt <= wr_cnt + 16;
+      if quant_dovalid = '1' then
+        if wr_cnt = 64-1 then
+          wr_cnt <= (others => '0');
         else
-          wr_cnt <= wr_cnt + 1 + resize(unsigned(rle_runlength), wr_cnt'length);
+          wr_cnt <=wr_cnt + 1;
         end if;
         
-        -- EOB can only be on AC!
-        if dbuf_data = (dbuf_data'range => '0') and wr_cnt /= 0 then
+        -- give ready ahead to save cycles!
+        if wr_cnt = 64-1-3 then
           ready_pb <= '1';
-        else
-          if wr_cnt + resize(unsigned(rle_runlength), wr_cnt'length) = 63 then
-            ready_pb <= '1';
-          end if;
         end if;
       end if;
-
     end if;
   end process;
   
   -------------------------------------------------------------------
-  -- fdct_buf_sel
+  -- zig_buf_sel
   -------------------------------------------------------------------
   p_buf_sel : process(CLK, RST)
   begin
     if RST = '1' then
-      qua_buf_sel_s   <= '0'; 
+      zig_buf_sel_s   <= '0'; 
     elsif CLK'event and CLK = '1' then
       if start_pb = '1' then
-        qua_buf_sel_s <= not qua_buf_sel_s;
+        zig_buf_sel_s <= not zig_buf_sel_s;
       end if;
-    end if;
-  end process;
-  
-  -------------------------------------------------------------------
-  -- output data valid
-  -------------------------------------------------------------------
-  p_dval : process(CLK, RST)
-  begin
-    if RST = '1' then
-      huf_dval_p0 <= '0';
-      huf_dval    <= '0';
-    elsif CLK'event and CLK = '1' then
-      huf_dval_p0 <= huf_rden;
-      huf_dval    <= huf_rden;
     end if;
   end process;
 

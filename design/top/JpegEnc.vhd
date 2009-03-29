@@ -95,6 +95,8 @@ architecture RTL of JpegEnc is
   signal fdct_ready         : std_logic;
   signal zig_start          : std_logic;
   signal zig_ready          : std_logic;
+  signal qua_start          : std_logic;
+  signal qua_ready          : std_logic;
   signal rle_start          : std_logic;
   signal rle_ready          : std_logic;
   signal huf_start          : std_logic;
@@ -107,6 +109,9 @@ architecture RTL of JpegEnc is
   signal rle_buf_sel        : std_logic;                     
   signal rle_rdaddr         : std_logic_vector(5 downto 0);
   signal rle_data           : std_logic_vector(11 downto 0);
+  signal qua_buf_sel        : std_logic;                     
+  signal qua_rdaddr         : std_logic_vector(5 downto 0);
+  signal qua_data           : std_logic_vector(11 downto 0);
   signal huf_buf_sel        : std_logic;
   signal huf_rdaddr         : std_logic_vector(5 downto 0);
   signal huf_rden           : std_logic;
@@ -122,6 +127,7 @@ architecture RTL of JpegEnc is
   signal zz_rden            : std_logic;
   signal fdct_sm_settings   : T_SM_SETTINGS;
   signal zig_sm_settings    : T_SM_SETTINGS;
+  signal qua_sm_settings    : T_SM_SETTINGS;
   signal rle_sm_settings    : T_SM_SETTINGS;
   signal huf_sm_settings    : T_SM_SETTINGS;
   signal bs_sm_settings     : T_SM_SETTINGS;
@@ -242,6 +248,11 @@ begin
         zig_start          => zig_start,
         zig_ready          => zig_ready,
         zig_sm_settings    => zig_sm_settings,
+        
+        -- Quantizer
+        qua_start          => qua_start,
+        qua_ready          => qua_ready,
+        qua_sm_settings    => qua_sm_settings,
 
         -- RLE
         rle_start          => rle_start,
@@ -312,23 +323,47 @@ begin
         ready_pb           => zig_ready,
         zig_sm_settings    => zig_sm_settings,
 
-        -- RLE
-        rle_buf_sel        => rle_buf_sel,
-        rle_rdaddr         => rle_rdaddr,
-        rle_data           => rle_data,
+        -- Quantizer
+        qua_buf_sel        => qua_buf_sel,
+        qua_rdaddr         => qua_rdaddr,
+        qua_data           => qua_data,
 
         -- FDCT
         fdct_buf_sel       => zz_buf_sel,
         fdct_rd_addr       => zz_rd_addr,
         fdct_data          => zz_data,
-        fdct_rden          => zz_rden,
+        fdct_rden          => zz_rden
+    );
+   
+  -------------------------------------------------------------------
+  -- Quantizer top level
+  -------------------------------------------------------------------
+  U_QUANT_TOP : entity work.QUANT_TOP
+  port map
+  (
+        CLK                => CLK,
+        RST                => RST,
+        -- CTRL
+        start_pb           => qua_start,
+        ready_pb           => qua_ready,
+        qua_sm_settings    => qua_sm_settings,
+
+        -- RLE
+        rle_buf_sel        => rle_buf_sel,
+        rle_rdaddr         => rle_rdaddr,
+        rle_data           => rle_data,
+
+        -- ZIGZAG
+        zig_buf_sel        => qua_buf_sel,
+        zig_rd_addr        => qua_rdaddr,
+        zig_data           => qua_data,
 
         -- HOST
         qdata              => qdata,
         qaddr              => qaddr,
         qwren              => qwren
-    );
-   
+    );  
+    
   -------------------------------------------------------------------
   -- RLE TOP
   -------------------------------------------------------------------
@@ -351,10 +386,10 @@ begin
         huf_dval           => huf_dval,
         huf_fifo_empty     => huf_fifo_empty,
 
-        -- ZIGZAG
-        zig_buf_sel        => rle_buf_sel,
-        zig_rd_addr        => rle_rdaddr,
-        zig_data           => rle_data,
+        -- Quantizer
+        qua_buf_sel        => rle_buf_sel,
+        qua_rd_addr        => rle_rdaddr,
+        qua_data           => rle_data,
         
         -- HostIF
         sof                => sof

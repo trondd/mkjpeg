@@ -65,6 +65,11 @@ entity CtrlSM is
         zig_ready          : in  std_logic;
         zig_sm_settings    : out T_SM_SETTINGS;
         
+        -- Quantizer
+        qua_start          : out std_logic;
+        qua_ready          : in  std_logic;
+        qua_sm_settings    : out T_SM_SETTINGS;
+        
         -- RLE
         rle_start          : out std_logic;
         rle_ready          : in  std_logic;
@@ -97,16 +102,18 @@ end entity CtrlSM;
 -------------------------------------------------------------------------------
 architecture RTL of CtrlSM is
 
+  constant NUM_STAGES   : integer := 6;
+
   type T_STATE is (IDLES, JFIF, HORIZ, COMP, VERT, EOI);
-  type ARR_FSM is array(5 downto 1) of std_logic_vector(1 downto 0);
+  type ARR_FSM is array(NUM_STAGES downto 1) of std_logic_vector(1 downto 0);
   
-  type T_ARR_SM_SETTINGS is array(6 downto 1) of T_SM_SETTINGS;
+  type T_ARR_SM_SETTINGS is array(NUM_STAGES+1 downto 1) of T_SM_SETTINGS;
   signal Reg             : T_ARR_SM_SETTINGS;
   signal main_state      : T_STATE;
-  signal start           : std_logic_vector(6 downto 1);
-  signal idle            : std_logic_vector(6 downto 1);
-  signal start_PB        : std_logic_vector(5 downto 1);
-  signal ready_PB        : std_logic_vector(5 downto 1);
+  signal start           : std_logic_vector(NUM_STAGES+1 downto 1);
+  signal idle            : std_logic_vector(NUM_STAGES+1 downto 1);
+  signal start_PB        : std_logic_vector(NUM_STAGES downto 1);
+  signal ready_PB        : std_logic_vector(NUM_STAGES downto 1);
   signal fsm             : ARR_FSM;
   signal start1_d        : std_logic;
   signal RSM             : T_SM_SETTINGS;
@@ -120,9 +127,10 @@ begin
 
   fdct_sm_settings <= Reg(1);
   zig_sm_settings  <= Reg(2);
-  rle_sm_settings  <= Reg(3);
-  huf_sm_settings  <= Reg(4);
-  bs_sm_settings   <= Reg(5);
+  qua_sm_settings  <= Reg(3);
+  rle_sm_settings  <= Reg(4);
+  huf_sm_settings  <= Reg(5);
+  bs_sm_settings   <= Reg(6);
 
   fdct_start    <= start_PB(1);
   ready_PB(1)   <= fdct_ready;
@@ -130,21 +138,24 @@ begin
   zig_start     <= start_PB(2);
   ready_PB(2)   <= zig_ready;
   
-  rle_start     <= start_PB(3);
-  ready_PB(3)   <= rle_ready;
+  qua_start     <= start_PB(3);
+  ready_PB(3)   <= qua_ready;
   
-  huf_start     <= start_PB(4);
-  ready_PB(4)   <= huf_ready;
+  rle_start     <= start_PB(4);
+  ready_PB(4)   <= rle_ready;
   
-  bs_start      <= start_PB(5);
-  ready_PB(5)   <= bs_ready;
+  huf_start     <= start_PB(5);
+  ready_PB(5)   <= huf_ready;
+  
+  bs_start      <= start_PB(6);
+  ready_PB(6)   <= bs_ready;
   
   -----------------------------------------------------------------------------
-  -- CTRLSM1..5
+  -- CTRLSM 1..NUM_STAGES
   -----------------------------------------------------------------------------
-  G_S_CTRL_SM : for i in 1 to 5 generate
+  G_S_CTRL_SM : for i in 1 to NUM_STAGES generate
   
-    -- CTRLSM1..5
+    -- CTRLSM 1..NUM_STAGES
     U_S_CTRL_SM : entity work.SingleSM
     port map
     (
@@ -164,12 +175,12 @@ begin
     );
   end generate G_S_CTRL_SM;
   
-  idle(6) <= '1';
+  idle(NUM_STAGES+1) <= '1';
   
   -------------------------------------------------------------------
-  -- Reg1
+  -- Regs
   -------------------------------------------------------------------
-  G_REG_SM : for i in 1 to 5 generate
+  G_REG_SM : for i in 1 to NUM_STAGES generate
     p_reg1 : process(CLK, RST)
     begin
       if RST = '1' then
@@ -272,12 +283,11 @@ begin
             RSM.y_cnt <= RSM.y_cnt + 8;
             main_state <= HORIZ;
           else
-            if idle(1) = '1' and idle(2) = '1' and idle(3) = '1' and 
-               idle(4) = '1' and idle(5) = '1' then
-              main_state   <= EOI;
-              jfif_eoi     <= '1';
+            if idle(NUM_STAGES downto 1) = (NUM_STAGES-1 downto 0 => '1') then
+              main_state     <= EOI;
+              jfif_eoi       <= '1';
               out_mux_ctrl_s <= '0';
-              jfif_start   <= '1';
+              jfif_start     <= '1';
             end if;
           end if;
         

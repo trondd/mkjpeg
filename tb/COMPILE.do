@@ -54,11 +54,12 @@ vcom ../design/mdct/FDCT.vhd
 vcom ../tb/vhdl/DCT_TROM.vhd
 
 # quantizer
-vcom ../design/quantizer/ROMQ.vhd
-vcom ../design/quantizer/s_divider.vhd
+#vcom ../design/quantizer/ROMQ.vhd
+#vcom ../design/quantizer/s_divider.vhd
 vcom ../design/quantizer/ROMR.vhd
 vcom ../design/quantizer/r_divider.vhd
 vcom ../design/quantizer/QUANTIZER.vhd
+vcom ../design/quantizer/QUANT_TOP.vhd
 
 # zigzag
 vcom ../design/zigzag/ZIGZAG.vhd

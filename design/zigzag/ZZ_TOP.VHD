@@ -7,7 +7,7 @@
 --
 -- Content   : ZigZag Top level
 --
--- Description : Zig Zag scan and Quantizer
+-- Description : Zig Zag scan
 --
 -- Spec.     : 
 --
@@ -51,21 +51,16 @@ entity ZZ_TOP is
         ready_pb           : out std_logic;
         zig_sm_settings    : in  T_SM_SETTINGS;
         
-        -- RLE
-        rle_buf_sel        : in  std_logic;
-        rle_rdaddr         : in  std_logic_vector(5 downto 0);
-        rle_data           : out std_logic_vector(11 downto 0);
+        -- Quantizer
+        qua_buf_sel        : in  std_logic;
+        qua_rdaddr         : in  std_logic_vector(5 downto 0);
+        qua_data           : out std_logic_vector(11 downto 0);
         
         -- FDCT
         fdct_buf_sel       : out std_logic;
         fdct_rd_addr       : out std_logic_vector(5 downto 0);
         fdct_data          : in  std_logic_vector(11 downto 0);
-        fdct_rden          : out std_logic;
-        
-        -- HOST
-        qdata              : in  std_logic_vector(7 downto 0);
-        qaddr              : in  std_logic_vector(6 downto 0);
-        qwren              : in  std_logic
+        fdct_rden          : out std_logic
     );
 end entity ZZ_TOP;
 
@@ -85,8 +80,6 @@ architecture RTL of ZZ_TOP is
   signal zigzag_divalid : std_logic;
   signal zigzag_dout    : std_logic_vector(11 downto 0);
   signal zigzag_dovalid : std_logic;
-  signal quant_dout     : std_logic_vector(11 downto 0);
-  signal quant_dovalid  : std_logic;
   signal wr_cnt         : unsigned(5 downto 0);
   signal rd_cnt         : unsigned(5 downto 0);
   signal rd_en_d        : std_logic_vector(5 downto 0);
@@ -102,7 +95,7 @@ architecture RTL of ZZ_TOP is
 begin
 
   fdct_rd_addr <= std_logic_vector(zz_rd_addr);
-  rle_data     <= dbuf_q;
+  qua_data     <= dbuf_q;
   fdct_buf_sel <= fdct_buf_sel_s;
   fdct_rden    <= rd_en;
 
@@ -134,31 +127,6 @@ begin
   zigzag_divalid <= rd_en_d(1);
   
   -------------------------------------------------------------------
-  -- Quantizer
-  -------------------------------------------------------------------
-  U_quantizer : entity work.quantizer
-  generic map
-    ( 
-      SIZE_C        => 12,
-      RAMQADDR_W    => 7,
-      RAMQDATA_W    => 8
-    )
-  port map
-    (
-      rst      => RST,
-      clk      => CLK,
-      di       => zigzag_dout,
-      divalid  => zigzag_dovalid,
-      qdata    => qdata,
-      qwaddr   => qaddr,
-      qwren    => qwren,
-      cmp_idx  => zig_sm_settings.cmp_idx,
-    
-      do       => quant_dout,
-      dovalid  => quant_dovalid
-    ); 
-  
-  -------------------------------------------------------------------
   -- DBUF
   -------------------------------------------------------------------
   U_RAMZ : entity work.RAMZ
@@ -178,10 +146,10 @@ begin
         q           => dbuf_q
   ); 
   
-  dbuf_data  <= quant_dout;
-  dbuf_waddr <= (not rle_buf_sel) & std_logic_vector(wr_cnt);
-  dbuf_we    <= quant_dovalid;
-  dbuf_raddr <= rle_buf_sel & rle_rdaddr;
+  dbuf_data  <= zigzag_dout;
+  dbuf_waddr <= (not qua_buf_sel) & std_logic_vector(wr_cnt);
+  dbuf_we    <= zigzag_dovalid;
+  dbuf_raddr <= qua_buf_sel & qua_rdaddr;
   
   -------------------------------------------------------------------
   -- FIFO Ctrl
@@ -243,13 +211,18 @@ begin
         wr_cnt <= (others => '0');
       end if;
       
-      if quant_dovalid = '1' then
+      if zigzag_dovalid = '1' then
         if wr_cnt = 64-1 then
           wr_cnt <= (others => '0');
-          ready_pb <= '1';
         else
           wr_cnt <=wr_cnt + 1;
         end if;
+        
+        -- give ready ahead to save cycles!
+        if wr_cnt = 64-1-3 then
+          ready_pb <= '1';
+        end if;
+        
       end if;
     end if;
   end process;
