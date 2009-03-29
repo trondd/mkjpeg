@@ -30,7 +30,7 @@ library work;
   use work.GPL_V2_Image_Pkg.ALL;
   use WORK.MDCT_PKG.all;
   use WORK.MDCTTB_PKG.all;
-  
+  use work.JPEG_PKG.all;  
   
 entity HostBFM is
   port 
@@ -226,12 +226,19 @@ begin
  
       if y_size rem N > 0 then
         assert false
-          report "E03: Image height dimension is not multiply of 8!"
+          report "ERROR: Image height dimension is not multiply of 8!"
           severity Failure;
       end if;
       if x_size rem N > 0 then
         assert false
-          report "E03: Image width dimension is not multiply of 8!"
+          report "ERROR: Image width dimension is not multiply of 8!"
+          severity Failure;
+      end if;
+      
+      if x_size > C_MAX_LINE_WIDTH then
+        assert false
+          report "ERROR: Image width bigger than C_MAX_LINE_WIDTH in JPEG_PKG.VHD! " &
+                 "Increase C_MAX_LINE_WIDTH accordingly"
           severity Failure;
       end if;
       
