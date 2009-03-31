@@ -1,18 +1,18 @@
 #-----------------------------------------------------------------------------#
 #                                                                             #
 #                         M A C R O    F I L E                                #
-#                          COPYRIGHT (C) 2006                                 #
+#                          COPYRIGHT (C) 2009                                 #
 #                                                                             #
 #-----------------------------------------------------------------------------#
 #-
 #- Title       : MDCT_TB.DO
-#- Design      : Unsigned Pipelined Divider
+#- Design      : EV_JPEG_ENC
 #- Author      : Michal Krepa
 #-
 #------------------------------------------------------------------------------
 #-
 #- File        : MDCT_TB.DO
-#- Created     : Sat Mar 5 2006
+#- Created     : Sat Mar 31 2009
 #-
 #------------------------------------------------------------------------------
 #-
@@ -91,6 +91,7 @@ vcom ../design/hostif/HostIF.vhd
 vcom ../design/iramif/IRAMIF.vhd
 
 # jfifgen
+vlog ../design/jfifgen/HeaderRam.v
 vcom ../design/jfifgen/JFIFGen.vhd
 
 # outmux

@@ -103,6 +103,19 @@ architecture RTL of JFIFGen is
   signal eoi_wr       : std_logic;
   signal eoi_wr_d1    : std_logic;
   
+  component HeaderRam is
+  port
+  (
+    d                 : in  STD_LOGIC_VECTOR(7 downto 0);
+    waddr             : in  STD_LOGIC_VECTOR(9 downto 0);
+    raddr             : in  STD_LOGIC_VECTOR(9 downto 0);
+    we                : in  STD_LOGIC;
+    clk               : in  STD_LOGIC;
+    
+    q                 : out STD_LOGIC_VECTOR(7 downto 0)
+  );  
+  end component;
+  
 -------------------------------------------------------------------------------
 -- Architecture: begin
 -------------------------------------------------------------------------------
@@ -111,12 +124,7 @@ begin
   -------------------------------------------------------------------
   -- Header RAM
   -------------------------------------------------------------------
-  U_Header_RAM : entity work.RAMZ
-  generic map
-  ( 
-      RAMADDR_W     => 10,
-      RAMDATA_W     => 8
-  )
+  U_Header_RAM : entity work.HeaderRam
   port map
   (      
         d           => hr_data,
