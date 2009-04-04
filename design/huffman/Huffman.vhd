@@ -127,6 +127,7 @@ architecture RTL of Huffman is
   signal VLC_CR_DC         : unsigned(10 downto 0);
   signal VLC_CR_AC_size    : unsigned(4 downto 0);
   signal VLC_CR_AC         : unsigned(15 downto 0);
+  signal start_pb_d1       : std_logic;
   
 -------------------------------------------------------------------------------
 -- Architecture: begin
@@ -348,13 +349,15 @@ begin
       fifo_wren    <= '0';
       fifo_wbyte   <= (others => '0');
       rd_en_s      <= '0';
+      start_pb_d1  <= '0';
     elsif CLK'event and CLK = '1' then
       fifo_wren <= '0';
       ready_HFW <= '0';
       rd_en_s   <= '0';
+      start_pb_d1 <= start_pb;
       
-      if start_pb = '1' then
-        rd_en_s     <= '1';
+      if start_pb_d1 = '1' then
+        rd_en_s     <= '1' and not rle_fifo_empty;
       end if;
     
       if HFW_running = '1' and ready_HFW = '0' then
@@ -362,7 +365,7 @@ begin
         if num_fifo_wrs = 0 then
           ready_HFW    <= '1';
           if state = RUN_VLI then
-            rd_en_s      <= '1';
+            rd_en_s      <= '1' and not rle_fifo_empty;
           end if;
         -- single byte write to FIFO
         else
@@ -372,7 +375,7 @@ begin
           if fifo_wrt_cnt + 1 = num_fifo_wrs then
             ready_HFW    <= '1';
             if state = RUN_VLI then
-              rd_en_s      <= '1';
+              rd_en_s      <= '1' and not rle_fifo_empty;
             end if;
             fifo_wrt_cnt <= (others => '0');
           end if;
@@ -425,7 +428,7 @@ begin
         
         when RUN_VLC =>
           -- data valid DC or data valid AC
-          if (d_val_d2 = '1' and first_rle_word = '1') or 
+          if (d_val_d1 = '1' and first_rle_word = '1') or 
              (d_val = '1' and first_rle_word = '0') then
             for i in 0 to C_M-1 loop
               if i < to_integer(VLC_size) then

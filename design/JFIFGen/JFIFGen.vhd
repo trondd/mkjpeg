@@ -124,7 +124,7 @@ begin
   -------------------------------------------------------------------
   -- Header RAM
   -------------------------------------------------------------------
-  U_Header_RAM : entity work.HeaderRam
+  U_Header_RAM : HeaderRam
   port map
   (      
         d           => hr_data,

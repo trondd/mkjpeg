@@ -427,10 +427,32 @@ add wave -noupdate -format Literal -radix unsigned /jpeg_tb/u_jpegenc/u_rle_top/
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rle/wr_cnt_d1
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rle/wr_cnt
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rle/rd_cnt
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rle/rd_en_d
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rle/rd_en
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rle/divalid
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rle/zrl_proc
+add wave -noupdate -divider DoubleFIFO
+add wave -noupdate -divider RLE_DoubleFIFO
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/clk
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/rst
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/data_in
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/wren
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/buf_sel
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/rd_req
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo_empty
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/data_out
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_rd
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_wr
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_q
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_full
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_empty
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo1_count
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_rd
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_wr
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_q
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_full
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_empty
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo2_count
+add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_rle_top/u_rledoublefifo/fifo_data_in
 add wave -noupdate -divider HUFFMAN
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/clk
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/rst
@@ -458,7 +480,6 @@ add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/last_block
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/image_area_size
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/block_cnt
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/rd_en
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/d_val
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vli_size_d
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vli_d
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vlc_size
@@ -469,6 +490,7 @@ add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vlc_dc_size
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vlc_dc
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vlc_ac_size
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/vlc_ac
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/d_val
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/d_val_d1
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/d_val_d2
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/d_val_d3
@@ -480,28 +502,6 @@ add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/bs_buf_sel
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/bs_fifo_empty
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/bs_rd_req
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/bs_packed_byte
-add wave -noupdate -divider DoubleFIFO
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/clk
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/rst
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/data_in
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/wren
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/buf_sel
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/rd_req
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo_empty
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/data_out
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_rd
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_wr
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_q
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_full
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_empty
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo1_count
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_rd
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_wr
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_q
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_full
-add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_empty
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo2_count
-add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_huffman/u_doublefifo/fifo_data_in
 add wave -noupdate -divider BYTE_STUFFER
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_bytestuffer/clk
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_bytestuffer/rst
@@ -569,7 +569,7 @@ add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_outmux/ram_byte
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/u_outmux/ram_wren
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/u_outmux/ram_wraddr
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 4} {705443843 ps} 0}
+WaveRestoreCursors {{Cursor 4} {56415000 ps} 0}
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 55
 configure wave -justifyvalue left
@@ -584,4 +584,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {705315540 ps} {705572146 ps}
+WaveRestoreZoom {56254709 ps} {56768431 ps}

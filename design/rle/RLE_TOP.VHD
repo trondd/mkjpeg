@@ -212,12 +212,14 @@ begin
   begin
     if RST = '1' then
       huf_dval_p0 <= '0';
-      huf_dval    <= '0';
+      --huf_dval    <= '0';
     elsif CLK'event and CLK = '1' then
       huf_dval_p0 <= huf_rden;
-      huf_dval    <= huf_rden;
+      --huf_dval    <= huf_rden;
     end if;
   end process;
+  
+  huf_dval    <= huf_rden;
 
 end architecture RTL;
 -------------------------------------------------------------------------------

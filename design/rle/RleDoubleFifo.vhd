@@ -154,22 +154,29 @@ begin
   p_mux3 : process(CLK, RST)
   begin
     if RST = '1' then
-      data_out   <= (others => '0');
-      fifo1_rd   <= '0';
-      fifo2_rd   <= '0';
-      fifo_empty <= '0';
+      --data_out   <= (others => '0');
+      --fifo1_rd   <= '0';
+      --fifo2_rd   <= '0';
+      --fifo_empty <= '0';
     elsif CLK'event and CLK = '1' then
       if buf_sel = '1' then
-        data_out   <= fifo1_q;
-        fifo1_rd   <= rd_req;
-        fifo_empty <= fifo1_empty;
+        --data_out   <= fifo1_q;
+        --fifo1_rd   <= rd_req;
+        --fifo_empty <= fifo1_empty;
       else
-        data_out <= fifo2_q;
-        fifo2_rd <= rd_req;
-        fifo_empty <= fifo2_empty;
+        --data_out <= fifo2_q;
+        --fifo2_rd <= rd_req;
+        --fifo_empty <= fifo2_empty;
       end if;
     end if;
   end process;
+  
+  fifo1_rd   <= rd_req when buf_sel = '1' else '0';
+  fifo2_rd   <= rd_req when buf_sel = '0' else '0';
+  
+  data_out   <= fifo1_q when buf_sel = '1' else fifo2_q;
+  fifo_empty   <= fifo1_empty when buf_sel = '1' else fifo2_empty;
+  
   
 
 end architecture RTL;
