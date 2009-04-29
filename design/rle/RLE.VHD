@@ -201,7 +201,11 @@ begin
         if zero_cnt <= 15 then
           acc_reg        <= RESIZE(SIGNED(zrl_di),RAMDATA_W+1);
           runlength_reg  <= zero_cnt(3 downto 0);
-          zero_cnt       <= (others => '0');
+          if signed(di) = 0 then
+            zero_cnt     <= to_unsigned(1,zero_cnt'length);
+          else
+            zero_cnt     <= (others => '0');
+          end if;
           dovalid_reg    <= '1';
           -- continue input handling
           zrl_proc <= '0';
