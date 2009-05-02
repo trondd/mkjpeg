@@ -182,7 +182,7 @@ begin
         if dbuf_data = (dbuf_data'range => '0') and wr_cnt /= 0 then
           ready_pb <= '1';
         else
-          if wr_cnt + resize(unsigned(rle_runlength), wr_cnt'length) = 63 then
+          if wr_cnt + resize(unsigned(rle_runlength), wr_cnt'length) = 64-1 then
             ready_pb <= '1';
           end if;
         end if;

@@ -189,16 +189,37 @@ begin
         last_idx <= unsigned(img_size_x(15 downto 3))-1;
       end if;      
     
-      if last_idx > 0 then
-        if C_MEMORY_OPTIMIZED = 0 then
-          if unsigned(fifo_count(to_integer(last_idx)-2)) > to_unsigned(128-2*8,8) then
-            fifo_almost_full <= '1';
-          else
-            fifo_almost_full <= '0';
-          end if;
+      if C_MEMORY_OPTIMIZED = 0 then
+        if unsigned(fifo_count(to_integer(wblock_cnt))) > to_unsigned(128-2*8,8) then
+          fifo_almost_full <= '1';
         else
-          fifo_almost_full <= fifo_full(to_integer(last_idx));
+          fifo_almost_full <= '0';
         end if;
+      else
+        if unsigned(fifo_count(to_integer(wblock_cnt))) >= to_unsigned(62,8) then
+          fifo_almost_full <= '1';
+        -- due to FIFO full latency next subFIFO is in danger of being
+        -- overwritten thus its fifo full must be checked ahead
+        else
+          -- next=0 when current is last
+          if wblock_cnt = last_idx then
+            -- latency from FIFO full till it is recognized by Host is 2T (64-2)=62
+            if unsigned(fifo_count(0)) >= to_unsigned(62,8) then
+              fifo_almost_full <= '1';
+            else
+              fifo_almost_full <= '0';
+            end if;
+          -- next is just current+1
+          else
+            -- latency from FIFO full till it is recognized by Host is 2T (64-2)=62
+            if unsigned(fifo_count(to_integer(wblock_cnt)+1)) >= to_unsigned(62,8) then
+              fifo_almost_full <= '1';
+            else
+              fifo_almost_full <= '0';
+            end if;
+          end if;
+        end if;
+        
       end if;      
     end if;
   end process;

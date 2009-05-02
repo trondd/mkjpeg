@@ -76,7 +76,6 @@ architecture rtl of rle is
   
   signal divalid        : STD_LOGIC;
   signal zrl_proc       : std_logic;
-  signal zrl_proc_d1    : std_logic;
   signal zrl_di         : STD_LOGIC_VECTOR(RAMDATA_W-1 downto 0);
 begin
 
@@ -84,32 +83,6 @@ begin
   amplitude <= STD_LOGIC_VECTOR(ampli_vli_reg(11 downto 0));
   
   rd_addr <= STD_LOGIC_VECTOR(rd_cnt);
-
-  -------------------------------------------
-  -- Counter1
-  -------------------------------------------
-  process(clk,rst)
-  begin
-    if rst = '1' then
-      rd_en           <= '0';
-      rd_cnt          <= (others => '0');
-    elsif clk = '1' and clk'event then
-      if start_pb = '1' then
-        rd_cnt <= (others => '0');
-        rd_en <= '1';       
-      end if;
-      
-      -- input read enable
-      if rd_en = '1' and zrl_proc = '0' then
-        if rd_cnt = 64-1 then
-          rd_cnt <= (others => '0');
-          rd_en  <= '0';
-        else
-          rd_cnt <= rd_cnt + 1;
-        end if;
-      end if;
-    end if;
-  end process;
   
   -------------------------------------------
   -- MAIN PROCESSING
@@ -128,7 +101,8 @@ begin
       dovalid         <= '0';
       zero_cnt        <= (others => '0');
       zrl_proc        <= '0';
-      zrl_proc_d1     <= '0';
+      rd_en           <= '0';
+      rd_cnt          <= (others => '0');
     elsif clk = '1' and clk'event then
       dovalid_reg     <= '0';
       runlength_reg   <= (others => '0');
@@ -136,10 +110,24 @@ begin
       runlength       <= std_logic_vector(runlength_reg);
       dovalid         <= dovalid_reg;
       divalid         <= rd_en;
-      zrl_proc_d1     <= zrl_proc;
+      
+      if start_pb = '1' then
+        rd_cnt <= (others => '0');
+        rd_en <= '1';       
+      end if;
+      
+      -- input read enable
+      if rd_en = '1' then
+        if rd_cnt = 64-1 then
+          rd_cnt <= (others => '0');
+          rd_en  <= '0';
+        else
+          rd_cnt <= rd_cnt + 1;
+        end if;
+      end if;
 
       -- input data valid
-      if divalid = '1' and zrl_proc_d1 = '0' then
+      if divalid = '1' then
         wr_cnt <= wr_cnt + 1;
       
         -- first DCT coefficient received, DC data
@@ -191,6 +179,8 @@ begin
               -- stall input until ZRL is handled
               zrl_proc       <= '1';
               zrl_di         <= di;
+              divalid <= '0';
+              rd_cnt  <= rd_cnt;
             end if;
           end if;
         end if;
@@ -201,12 +191,13 @@ begin
         if zero_cnt <= 15 then
           acc_reg        <= RESIZE(SIGNED(zrl_di),RAMDATA_W+1);
           runlength_reg  <= zero_cnt(3 downto 0);
-          if signed(di) = 0 then
+          if signed(zrl_di) = 0 then
             zero_cnt     <= to_unsigned(1,zero_cnt'length);
           else
             zero_cnt     <= (others => '0');
           end if;
           dovalid_reg    <= '1';
+          divalid <= '1';
           -- continue input handling
           zrl_proc <= '0';
         -- zero_cnt > 15
@@ -216,6 +207,8 @@ begin
           runlength_reg  <= X"F";
           zero_cnt       <= zero_cnt - 16;
           dovalid_reg    <= '1';
+          divalid <= '0';
+          rd_cnt <= rd_cnt;
         end if;     
       end if;
       
