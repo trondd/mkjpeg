@@ -75,6 +75,7 @@ architecture rtl of rle is
   signal rd_en          : std_logic;
   
   signal divalid        : STD_LOGIC;
+  signal divalid_en     : std_logic;
   signal zrl_proc       : std_logic;
   signal zrl_di         : STD_LOGIC_VECTOR(RAMDATA_W-1 downto 0);
 begin
@@ -103,6 +104,7 @@ begin
       zrl_proc        <= '0';
       rd_en           <= '0';
       rd_cnt          <= (others => '0');
+      divalid_en      <= '0';
     elsif clk = '1' and clk'event then
       dovalid_reg     <= '0';
       runlength_reg   <= (others => '0');
@@ -112,8 +114,13 @@ begin
       divalid         <= rd_en;
       
       if start_pb = '1' then
-        rd_cnt <= (others => '0');
-        rd_en <= '1';       
+        rd_cnt     <= (others => '0');
+        rd_en      <= '1';    
+        divalid_en <= '1';
+      end if;
+      
+      if divalid = '1' and wr_cnt = 63 then
+        divalid_en <= '0';
       end if;
       
       -- input read enable
@@ -197,7 +204,7 @@ begin
             zero_cnt     <= (others => '0');
           end if;
           dovalid_reg    <= '1';
-          divalid <= '1';
+          divalid <= divalid_en;
           -- continue input handling
           zrl_proc <= '0';
         -- zero_cnt > 15
