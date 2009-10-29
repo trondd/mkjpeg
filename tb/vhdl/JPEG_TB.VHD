@@ -74,7 +74,8 @@ architecture TB of JPEG_TB is
   signal iram_rden         : std_logic;     
   signal sim_done          : std_logic;
   signal iram_fifo_afull   : std_logic;
-  
+  signal outif_almost_full : std_logic;
+  signal count1            : unsigned(15 downto 0);
 ------------------------------
 -- architecture begin
 ------------------------------       
@@ -150,7 +151,8 @@ begin
         -- OUT RAM
         ram_byte           => ram_byte,
         ram_wren           => ram_wren,  
-        ram_wraddr         => ram_wraddr    
+        ram_wraddr         => ram_wraddr,
+        outif_almost_full  => outif_almost_full
     );
   
   -------------------------------------------------------------------
@@ -202,6 +204,21 @@ begin
     wait;  
   end process;
 
+  
+  backpressure : process(CLK, RST)
+  begin
+    if RST = '1' then
+      outif_almost_full <= '0';
+      count1 <= (others => '0');
+    elsif CLK'event and CLK = '1' then
+      if count1 = 10000 then
+        count1 <= (others => '0');
+        outif_almost_full <= not outif_almost_full;
+      else
+        count1 <= count1 + 1;
+      end if;
+    end if;
+  end process;
 
 end TB;
 -----------------------------------

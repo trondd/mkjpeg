@@ -46,6 +46,9 @@ entity CtrlSM is
   (
         CLK                : in  std_logic;
         RST                : in  std_logic;
+        
+        -- output IF
+        outif_almost_full  : in  std_logic;
 
         -- HOST IF
         sof                : in  std_logic;
@@ -175,7 +178,7 @@ begin
     );
   end generate G_S_CTRL_SM;
   
-  idle(NUM_STAGES+1) <= '1';
+  idle(NUM_STAGES+1) <= not outif_almost_full;
   
   -------------------------------------------------------------------
   -- Regs

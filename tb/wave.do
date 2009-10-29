@@ -21,6 +21,7 @@ add wave -noupdate -format Logic /jpeg_tb/u_hostbfm/sim_done
 add wave -noupdate -format Literal /jpeg_tb/u_hostbfm/num_comps
 add wave -noupdate -format Literal -radix unsigned /jpeg_tb/u_hostbfm/addr_inc
 add wave -noupdate -divider JpegEnc
+add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/outif_almost_full
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/clk
 add wave -noupdate -format Logic /jpeg_tb/u_jpegenc/rst
 add wave -noupdate -format Literal /jpeg_tb/u_jpegenc/opb_abus
@@ -621,4 +622,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {38836051 ps} {39349773 ps}
+WaveRestoreZoom {511965 ps} {1652957 ps}

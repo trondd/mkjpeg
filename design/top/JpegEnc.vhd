@@ -67,7 +67,8 @@ entity JpegEnc is
         -- OUT RAM
         ram_byte           : out std_logic_vector(7 downto 0);
         ram_wren           : out std_logic;
-        ram_wraddr         : out std_logic_vector(23 downto 0)        
+        ram_wraddr         : out std_logic_vector(23 downto 0);
+        outif_almost_full  : in  std_logic        
     );
 end entity JpegEnc;
 
@@ -230,6 +231,9 @@ begin
   (
         CLK                => CLK,
         RST                => RST,
+        
+        -- output IF
+        outif_almost_full  => outif_almost_full,
 
         -- HOST IF
         sof                => sof,

@@ -32,11 +32,11 @@ package JPEG_PKG is
   -- warning! this parameter heavily affects memory size required
   -- if expected image width is known change this parameter to match this
   -- otherwise some onchip RAM will be wasted and never used
-  constant C_MAX_LINE_WIDTH   : integer := 640;
+  constant C_MAX_LINE_WIDTH   : integer := 1280;
 
   -- 0=highest clock per pixel performance
   -- 1=memory used by BUF_FIFO halved, speed performance reduced by circa 18%
-  constant C_MEMORY_OPTIMIZED : integer := 1;
+  constant C_MEMORY_OPTIMIZED : integer := 0;
   
   type T_SM_SETTINGS is record
     x_cnt               : unsigned(15 downto 0);
