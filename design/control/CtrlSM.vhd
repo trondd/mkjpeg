@@ -105,6 +105,7 @@ end entity CtrlSM;
 -------------------------------------------------------------------------------
 architecture RTL of CtrlSM is
 
+
   constant NUM_STAGES   : integer := 6;
 
   type T_STATE is (IDLES, JFIF, HORIZ, COMP, VERT, EOI);
