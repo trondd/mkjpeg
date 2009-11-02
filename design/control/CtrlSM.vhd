@@ -95,7 +95,7 @@ entity CtrlSM is
         
         -- OUT MUX
         out_mux_ctrl       : out std_logic
-    );
+   );
 end entity CtrlSM;
 
 -------------------------------------------------------------------------------

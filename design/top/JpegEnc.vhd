@@ -69,7 +69,7 @@ entity JpegEnc is
         ram_wren           : out std_logic;
         ram_wraddr         : out std_logic_vector(23 downto 0);
         outif_almost_full  : in  std_logic        
-    );
+   );
 end entity JpegEnc;
 
 
