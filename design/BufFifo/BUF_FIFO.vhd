@@ -320,9 +320,11 @@ begin
     end if;
   end process;
   
-  fdct_fifo_q  <= (ramq(15 downto 11) & "000" & 
-                  ramq(10 downto 5) & "00" & 
-                  ramq(4 downto 0) & "000") when C_PIXEL_BITS = 16 else ramq;
+
+  fdct_fifo_q <= (ramq(15 downto 11) & "000" & 
+                 ramq(10 downto 5) & "00" & 
+                 ramq(4 downto 0) & "000") when C_PIXEL_BITS = 16 else 
+                 std_logic_vector(resize(unsigned(ramq), 24));
   
   -------------------------------------------------------------------
   -- Mux3
