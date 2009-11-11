@@ -38,6 +38,10 @@ package JPEG_PKG is
   -- 1=memory used by BUF_FIFO halved, speed performance reduced by circa 18%
   constant C_MEMORY_OPTIMIZED : integer := 0;
   
+  -- 24 bit format RGB 888 bits
+  -- 16 bit format RGB 565 bits
+  constant C_PIXEL_BITS    : integer := 16;
+  
   type T_SM_SETTINGS is record
     x_cnt               : unsigned(15 downto 0);
     y_cnt               : unsigned(15 downto 0);

@@ -32,6 +32,7 @@ library work;
   use work.GPL_V2_Image_Pkg.ALL;
   use WORK.MDCT_PKG.all;
   use WORK.MDCTTB_PKG.all;
+  use work.JPEG_PKG.all;
 
 entity JPEG_TB is
 end JPEG_TB;
@@ -68,8 +69,8 @@ architecture TB of JPEG_TB is
   signal OPB_errAck        : std_logic;
   signal iram_waddr        : std_logic_vector(19 downto 0);
   signal iram_raddr        : std_logic_vector(19 downto 0);
-  signal iram_wdata        : std_logic_vector(23 downto 0);
-  signal iram_rdata        : std_logic_vector(23 downto 0);
+  signal iram_wdata        : std_logic_vector(C_PIXEL_BITS-1 downto 0);
+  signal iram_rdata        : std_logic_vector(C_PIXEL_BITS-1 downto 0);
   signal iram_wren         : std_logic;
   signal iram_rden         : std_logic;     
   signal sim_done          : std_logic;

@@ -50,7 +50,7 @@ entity HostBFM is
         OPB_errAck         : in  std_logic;
         
         -- HOST DATA
-       iram_wdata          : out std_logic_vector(23 downto 0);
+       iram_wdata          : out std_logic_vector(C_PIXEL_BITS-1 downto 0);
        iram_wren           : out std_logic;
        fifo_almost_full    : in  std_logic; 
         
@@ -255,10 +255,16 @@ begin
         x_cnt := 0;
         for x_n in 0 to x_size-1 loop
           data_word := X"00" & UNSIGNED(image_line(x_cnt to x_cnt+num_comps*IP_W-1));
-          data_word2(7 downto 0)   := data_word(23 downto 16);
-          data_word2(15 downto 8)  := data_word(15 downto 8);
-          data_word2(23 downto 16) := data_word(7 downto 0);    
-          
+          if C_PIXEL_BITS = 24 then
+            data_word2(7 downto 0)   := data_word(23 downto 16);
+            data_word2(15 downto 8)  := data_word(15 downto 8);
+            data_word2(23 downto 16) := data_word(7 downto 0);  
+          else
+            data_word2(4 downto 0)   := data_word(23 downto 19);
+            data_word2(10 downto 5)  := data_word(15 downto 10);
+            data_word2(15 downto 11) := data_word(7 downto 3);
+          end if;
+
           iram_wren  <= '0';
           iram_wdata <= (others => 'X');
           while(fifo_almost_full = '1') loop
@@ -270,7 +276,7 @@ begin
           --end loop;
           
           iram_wren <= '1';
-          iram_wdata <= std_logic_vector(data_word2(23 downto 0));
+          iram_wdata <= std_logic_vector(data_word2(C_PIXEL_BITS-1 downto 0));
           wait until rising_edge(clk);
           
           x_cnt := x_cnt + num_comps*IP_W;

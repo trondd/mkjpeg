@@ -60,7 +60,7 @@ entity JpegEnc is
         OPB_errAck         : out std_logic;
         
         -- IMAGE RAM
-        iram_wdata         : in  std_logic_vector(23 downto 0);
+        iram_wdata         : in  std_logic_vector(C_PIXEL_BITS-1 downto 0);
         iram_wren          : in  std_logic;
         iram_fifo_afull    : out std_logic; 
         

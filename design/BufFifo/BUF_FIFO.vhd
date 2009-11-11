@@ -53,7 +53,7 @@ entity BUF_FIFO is
         
         -- HOST DATA
         iram_wren          : in  std_logic;
-        iram_wdata         : in  std_logic_vector(23 downto 0);
+        iram_wdata         : in  std_logic_vector(C_PIXEL_BITS-1 downto 0);
         fifo_almost_full   : out std_logic;
         
         -- FDCT
@@ -73,7 +73,7 @@ end entity BUF_FIFO;
 architecture RTL of BUF_FIFO is
 
   constant C_NUM_SUBF      : integer := C_MAX_LINE_WIDTH/8;
-  constant C_PIXEL_BITS    : integer := 24;
+  
   constant C_SUBF_ADDRW    : integer := 7-C_MEMORY_OPTIMIZED;
   --constant C_LOG2_NUM_SUBF : integer := integer(log2(real(C_NUM_SUBF))); 
   
@@ -86,8 +86,8 @@ architecture RTL of BUF_FIFO is
 
   signal fifo_rd          : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_wr          : std_logic_vector(C_NUM_SUBF-1 downto 0);
-  signal fifo_data        : std_logic_vector(23 downto 0);
-  signal fifo_data_d1     : std_logic_vector(23 downto 0);
+  signal fifo_data        : std_logic_vector(C_PIXEL_BITS-1 downto 0);
+  signal fifo_data_d1     : std_logic_vector(C_PIXEL_BITS-1 downto 0);
   signal fifo_full        : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_empty       : std_logic_vector(C_NUM_SUBF-1 downto 0);
   signal fifo_half_full   : std_logic_vector(C_NUM_SUBF-1 downto 0);
@@ -320,7 +320,9 @@ begin
     end if;
   end process;
   
-  fdct_fifo_q  <= ramq;
+  fdct_fifo_q  <= (ramq(15 downto 11) & "000" & 
+                  ramq(10 downto 5) & "00" & 
+                  ramq(4 downto 0) & "000") when C_PIXEL_BITS = 16 else ramq;
   
   -------------------------------------------------------------------
   -- Mux3
