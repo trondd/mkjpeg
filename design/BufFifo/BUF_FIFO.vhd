@@ -340,7 +340,7 @@ begin
       fifo_data        <= (others => '0');
       fifo_data_d1     <= (others => '0');
     elsif CLK'event and CLK = '1' then
-      wr_idx_reg    <= unsigned(wblock_cnt(log2(C_NUM_SUBF)-1 downto 0));
+      wr_idx_reg   <= unsigned(wblock_cnt(log2(C_NUM_SUBF)-1 downto 0));
       
       fifo_data    <= iram_wdata;
       fifo_data_d1 <= fifo_data;
