@@ -146,9 +146,7 @@ architecture RTL of JpegEnc is
   signal bs_ram_wren        : std_logic;
   signal bs_ram_wraddr      : std_logic_vector(23 downto 0);
   signal jfif_eoi           : std_logic;
-  signal fdct_block_cnt     : std_logic_vector(12 downto 0);
   signal fdct_fifo_rd       : std_logic;
-  signal fdct_fifo_empty    : std_logic;
   signal fdct_fifo_q        : std_logic_vector(23 downto 0);
   signal fdct_fifo_hf_full  : std_logic;
   
@@ -217,9 +215,7 @@ begin
         fifo_almost_full   => iram_fifo_afull,
 
         -- FDCT
-        fdct_block_cnt     => fdct_block_cnt,
         fdct_fifo_rd       => fdct_fifo_rd,
-        fdct_fifo_empty    => fdct_fifo_empty,
         fdct_fifo_q        => fdct_fifo_q,
         fdct_fifo_hf_full  => fdct_fifo_hf_full
     );
@@ -297,9 +293,7 @@ begin
         fdct_sm_settings   => fdct_sm_settings,
 
         -- BUF_FIFO
-        bf_block_cnt       => fdct_block_cnt,  
         bf_fifo_rd         => fdct_fifo_rd,   
-        bf_fifo_empty      => fdct_fifo_empty,
         bf_fifo_q          => fdct_fifo_q,  
         bf_fifo_hf_full    => fdct_fifo_hf_full,
 

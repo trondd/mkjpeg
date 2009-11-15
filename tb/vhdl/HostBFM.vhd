@@ -271,7 +271,7 @@ begin
             wait until rising_edge(clk);
           end loop;
           
-          --for i in 0 to 10 loop
+          --for i in 0 to 9 loop
           --  wait until rising_edge(clk);
           --end loop;
           

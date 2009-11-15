@@ -52,9 +52,7 @@ entity FDCT is
         fdct_sm_settings   : in  T_SM_SETTINGS;
         
         -- BUF_FIFO
-        bf_block_cnt       : out std_logic_vector(12 downto 0);
         bf_fifo_rd         : out std_logic;
-        bf_fifo_empty      : in  std_logic;
         bf_fifo_q          : in  std_logic_vector(23 downto 0);
         bf_fifo_hf_full    : in  std_logic;
         
@@ -95,16 +93,16 @@ architecture RTL of FDCT is
   signal mdct_data_out     : std_logic_vector(11 downto 0);
   signal odv1              : std_logic;
   signal dcto1             : std_logic_vector(11 downto 0);
-  signal x_block_cnt       : unsigned(15 downto 0);
-  signal y_block_cnt       : unsigned(15 downto 0);
-  signal x_block_cnt_cur   : unsigned(15 downto 0);
-  signal y_block_cnt_cur   : unsigned(15 downto 0);
+  signal x_pixel_cnt       : unsigned(15 downto 0);
+  signal y_line_cnt        : unsigned(15 downto 0);
   signal rd_addr           : std_logic_vector(31 downto 0);
   signal input_rd_cnt      : unsigned(5 downto 0);
   signal rd_en             : std_logic;
   signal rd_en_d1          : std_logic;
   signal rdaddr            : unsigned(31 downto 0);
-  signal bf_dval           : std_logic_vector(3 downto 0);
+  signal bf_dval           : std_logic;
+  signal bf_dval_m1        : std_logic;
+  signal bf_dval_m2        : std_logic;
   signal wr_cnt            : unsigned(5 downto 0);
   signal dbuf_data         : std_logic_vector(11 downto 0);
   signal dbuf_q            : std_logic_vector(11 downto 0);
@@ -168,7 +166,6 @@ architecture RTL of FDCT is
   signal fram1_raddr       : std_logic_vector(5 downto 0);
   signal fram1_rd_d        : std_logic_vector(8 downto 0);
   signal fram1_rd          : std_logic;  
-  signal bf_fifo_empty_d1  : std_logic;
   signal rd_started        : std_logic;
   signal writing_en        : std_logic;
   
@@ -180,7 +177,6 @@ begin
   zz_data      <= dbuf_q;
   
   bf_fifo_rd   <= bf_fifo_rd_s;
-  bf_block_cnt <= std_logic_vector(x_block_cnt_cur(15 downto 3));
   
   -------------------------------------------------------------------
   -- FRAM1
@@ -202,7 +198,7 @@ begin
         q           => fram1_q
   );
   
-  fram1_we   <= bf_dval(bf_dval'high);
+  fram1_we   <= bf_dval;
   fram1_data <= bf_fifo_q;
   
   -------------------------------------------------------------------
@@ -227,8 +223,8 @@ begin
     if RST = '1' then
       rd_en           <= '0';
       rd_en_d1        <= '0';
-      x_block_cnt     <= (others => '0');
-      y_block_cnt     <= (others => '0');
+      x_pixel_cnt     <= (others => '0');
+      y_line_cnt     <= (others => '0');
       input_rd_cnt    <= (others => '0');
       cmp_idx         <= (others => '0');
       cur_cmp_idx     <= (others => '0');
@@ -242,11 +238,11 @@ begin
       cur_cmp_idx_d8  <= (others => '0');
       cur_cmp_idx_d9  <= (others => '0');
       eoi_fdct        <= '0';
-      x_block_cnt_cur <= (others => '0');
-      y_block_cnt_cur <= (others => '0');
       start_int       <= '0';
       bf_fifo_rd_s    <= '0';
-      bf_dval         <= (others => '0');
+      bf_dval         <= '0';
+      bf_dval_m1      <= '0';
+      bf_dval_m2      <= '0';
       fram1_rd        <= '0';
       fram1_rd_d      <= (others => '0');
       fram1_raddr     <= (others => '0');
@@ -263,7 +259,9 @@ begin
       cur_cmp_idx_d9 <= cur_cmp_idx_d8;
       start_int      <= '0';
       
-      bf_dval        <= bf_dval(bf_dval'length-2 downto 0) & bf_fifo_rd_s;
+      bf_dval_m2     <= bf_fifo_rd_s;
+      bf_dval_m1     <= bf_dval_m2;
+      bf_dval        <= bf_dval_m1;
       fram1_rd_d     <= fram1_rd_d(fram1_rd_d'length-2 downto 0) & fram1_rd;
     
       -- SOF or internal self-start
@@ -276,28 +274,28 @@ begin
         if cmp_idx = 3-1 then
           cmp_idx <= (others => '0');
           -- horizontal block counter
-          if x_block_cnt = unsigned(img_size_x)-8 then
-            x_block_cnt <= (others => '0');
+          if x_pixel_cnt = unsigned(img_size_x)-8 then
+            x_pixel_cnt <= (others => '0');
             -- vertical block counter
-            if y_block_cnt = unsigned(img_size_y)-8 then
-              y_block_cnt <= (others => '0');
+            if y_line_cnt = unsigned(img_size_y)-8 then
+              y_line_cnt <= (others => '0');
+              -- set end of image flag
               eoi_fdct <= '1';    
             else
-              y_block_cnt <= y_block_cnt + 8;
+              y_line_cnt <= y_line_cnt + 8;
             end if;
           else
-            x_block_cnt <= x_block_cnt + 8;
+            x_pixel_cnt <= x_pixel_cnt + 8;
           end if;
         else
           cmp_idx <=cmp_idx + 1;
         end if;
         
-        x_block_cnt_cur <= x_block_cnt;
-        y_block_cnt_cur <= y_block_cnt;
         cur_cmp_idx     <= cmp_idx;
       end if;
       
-      -- wait until FIFO becomes half full
+      -- wait until FIFO becomes half full but only for component 0
+      -- as we read buf FIFO only during component 0
       if rd_started = '1' and (bf_fifo_hf_full = '1' or cur_cmp_idx /= 0) then
         rd_en      <= '1';
         rd_started <= '0';
@@ -316,6 +314,7 @@ begin
         -- count number of samples read from input in one run
         if input_rd_cnt = 64-1 then
           rd_en        <= '0';
+          -- internal restart
           start_int    <= '1' and not eoi_fdct;
           eoi_fdct     <= '0';
         else
@@ -406,7 +405,7 @@ begin
   
   
   -------------------------------------------------------------------
-  -- FIFO rd controller
+  -- FIFO1 rd controller
   -------------------------------------------------------------------
   p_fifo_rd_ctrl : process(CLK, RST)
   begin
