@@ -70,27 +70,44 @@ end entity BUF_FIFO;
 -------------------------------------------------------------------------------
 architecture RTL of BUF_FIFO is
 
+  
+  constant C_NUM_LINES    : integer := 8 + C_EXTRA_LINES;
+
   signal pixel_cnt        : unsigned(15 downto 0);
   signal line_cnt         : unsigned(15 downto 0);
 
   signal ramq             : STD_LOGIC_VECTOR(C_PIXEL_BITS-1 downto 0);
   signal ramd             : STD_LOGIC_VECTOR(C_PIXEL_BITS-1 downto 0);
-  signal ramwaddr         : unsigned(log2(C_MAX_LINE_WIDTH*8)-1 downto 0);
+  signal ramwaddr         : unsigned(log2(C_MAX_LINE_WIDTH*C_NUM_LINES)-1 downto 0);
   signal ramenw           : STD_LOGIC;
-  signal ramraddr         : unsigned(log2(C_MAX_LINE_WIDTH*8)-1 downto 0);
+  signal ramraddr         : unsigned(log2(C_MAX_LINE_WIDTH*C_NUM_LINES)-1 downto 0);
   
-  signal pix_inblk_cnt    : unsigned(7 downto 0);
-  signal line_inblk_cnt   : unsigned(7 downto 0);
+  signal pix_inblk_cnt    : unsigned(2 downto 0);
+  signal pix_inblk_cnt_d1 : unsigned(2 downto 0);
+  signal line_inblk_cnt   : unsigned(2 downto 0);
   
   signal read_block_cnt   : unsigned(12 downto 0);
+  signal read_block_cnt_d1 : unsigned(12 downto 0);
   signal write_block_cnt  : unsigned(12 downto 0);
   
-  signal ramraddr_int     : unsigned(23 downto 0);
-  signal raddr_base_line  : unsigned(23 downto 0);
+  signal ramraddr_int     : unsigned(16+log2(C_NUM_LINES)-1 downto 0);
+  signal raddr_base_line  : unsigned(16+log2(C_NUM_LINES)-1 downto 0);
   signal raddr_tmp        : unsigned(15 downto 0);
-  signal ramwaddr_d1      : unsigned(log2(C_MAX_LINE_WIDTH*8)-1 downto 0);
+  signal ramwaddr_d1      : unsigned(ramwaddr'range);
   
-  signal block_lock       : unsigned(C_MAX_LINE_WIDTH/8-1 downto 0);
+  signal line_lock        : unsigned(log2(C_NUM_LINES)-1 downto 0);
+  
+  signal memwr_line_cnt   : unsigned(log2(C_NUM_LINES)-1 downto 0);
+  
+  signal memrd_offs_cnt   : unsigned(log2(C_NUM_LINES)-1+1 downto 0);
+  signal memrd_line       : unsigned(log2(C_NUM_LINES)-1 downto 0);
+  
+  signal wr_line_idx      : unsigned(15 downto 0);
+  signal rd_line_idx      : unsigned(15 downto 0);
+  
+  signal image_write_end  : std_logic;  
+  
+  
   
 -------------------------------------------------------------------------------
 -- Architecture: begin
@@ -102,7 +119,7 @@ begin
   U_SUB_RAMZ : entity work.SUB_RAMZ
   generic map 
   (
-           RAMADDR_W => log2(C_MAX_LINE_WIDTH*8),
+           RAMADDR_W => log2( C_MAX_LINE_WIDTH*C_NUM_LINES ),
            RAMDATA_W => C_PIXEL_BITS        
   )   
   port map 
@@ -136,24 +153,33 @@ begin
   p_pixel_cnt : process(CLK, RST)
   begin
     if RST = '1' then
-      pixel_cnt   <= (others => '0');
-      line_cnt    <= (others => '0');
-      ramwaddr    <= (others => '0');
-      ramwaddr_d1 <= (others => '0');      
+      pixel_cnt      <= (others => '0');
+      memwr_line_cnt <= (others => '0');
+      wr_line_idx    <= (others => '0');
+      ramwaddr       <= (others => '0');
+      ramwaddr_d1    <= (others => '0');    
+      image_write_end <= '0';
     elsif CLK'event and CLK = '1' then
       ramwaddr_d1 <= ramwaddr;
     
       if iram_wren = '1' then
-        -- pixel index in line
+        -- end of line
         if pixel_cnt = unsigned(img_size_x)-1 then
           pixel_cnt <= (others => '0');
-          -- line counter
-          line_cnt  <= line_cnt + 1;
-          -- RAM is only 8 lines buffer
-          if line_cnt(2 downto 0) = 8-1 then
-            ramwaddr <= (others => '0');
-          else
-            ramwaddr  <= ramwaddr + 1;
+          -- absolute write line index
+          wr_line_idx <= wr_line_idx + 1;
+          
+          if wr_line_idx = unsigned(img_size_y)-1 then
+            image_write_end <= '1';
+          end if;
+          
+          -- memory line index
+          if memwr_line_cnt = C_NUM_LINES-1 then
+            memwr_line_cnt <= (others => '0');
+            ramwaddr       <= (others => '0');
+          else         
+            memwr_line_cnt <= memwr_line_cnt + 1;
+            ramwaddr       <= ramwaddr + 1;
           end if;
         else
           pixel_cnt <= pixel_cnt + 1;
@@ -162,33 +188,12 @@ begin
       end if;
       
       if sof = '1' then
-        pixel_cnt <= (others => '0');
-        ramwaddr  <= (others => '0');
+        pixel_cnt      <= (others => '0');
+        ramwaddr       <= (others => '0');
+        memwr_line_cnt <= (others => '0');
+        wr_line_idx    <= (others => '0');
+        image_write_end <= '0';
       end if;
-    end if;
-  end process;
-
-  write_block_cnt <= pixel_cnt(15 downto 3);
-
-  -------------------------------------------------------------------
-  -- lock written blocks, unlock after read
-  -------------------------------------------------------------------
-  p_mux6 : process(CLK, RST)
-  begin
-    if RST = '1' then
-      block_lock <= (others => '0');
-    elsif CLK'event and CLK = '1' then
-      if pixel_cnt(2 downto 0) = 8-1 then
-        if line_cnt(2 downto 0) = 8-1 then
-          block_lock(to_integer(write_block_cnt)) <= '1';
-        end if;
-      end if;
-      
-      if pix_inblk_cnt = 8-1 then
-        if line_inblk_cnt = 8-1 then
-          block_lock(to_integer(read_block_cnt)) <= '0';
-        end if;
-      end if; 
     end if;
   end process;
   
@@ -202,19 +207,13 @@ begin
       fifo_almost_full    <= '0';
     elsif CLK'event and CLK = '1' then
         
-      if block_lock(to_integer(read_block_cnt)) = '1' then
+      if rd_line_idx + 8 <= wr_line_idx then
         fdct_fifo_hf_full <= '1';
       else
         fdct_fifo_hf_full <= '0';
       end if;
       
-      if write_block_cnt = unsigned(img_size_x(15 downto 3))-1 then
-        if block_lock(0) = '1' then
-          fifo_almost_full <= '1';
-        else
-          fifo_almost_full <= '0';
-        end if;
-      elsif block_lock(to_integer(write_block_cnt+1)) = '1' then
+      if wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
         fifo_almost_full <= '1';
       else
         fifo_almost_full <= '0';
@@ -229,32 +228,66 @@ begin
   p_mux5 : process(CLK, RST)
   begin
     if RST = '1' then
+      memrd_offs_cnt <= (others => '0');
       read_block_cnt <= (others => '0');
       pix_inblk_cnt  <= (others => '0');
       line_inblk_cnt <= (others => '0');
+      rd_line_idx    <= (others => '0');
+      pix_inblk_cnt_d1  <= (others => '0');
+      read_block_cnt_d1 <= (others => '0');
     elsif CLK'event and CLK = '1' then
+      pix_inblk_cnt_d1 <= pix_inblk_cnt;
+      read_block_cnt_d1 <= read_block_cnt;
+      
+      -- BUF FIFO read
       if fdct_fifo_rd = '1' then
+        -- last pixel in block
         if pix_inblk_cnt = 8-1 then
           pix_inblk_cnt <= (others => '0');
+
+          -- last block in line
+          --if read_block_cnt = unsigned(img_size_x(15 downto 3))-1 then
+          --  rd_line_idx <= rd_line_idx + 1;
+          --end if;
+
+          -- last line in 8
           if line_inblk_cnt = 8-1 then
             line_inblk_cnt <= (others => '0');
+
+            -- last block in last line
             if read_block_cnt = unsigned(img_size_x(15 downto 3))-1 then
               read_block_cnt <= (others => '0');
+              rd_line_idx <= rd_line_idx + 8;
+              if memrd_offs_cnt + 8 > C_NUM_LINES-1 then
+                memrd_offs_cnt <= memrd_offs_cnt + 8 - C_NUM_LINES;
+              else
+                memrd_offs_cnt <= memrd_offs_cnt + 8;
+              end if;
             else
               read_block_cnt <= read_block_cnt + 1;
             end if;
           else
             line_inblk_cnt <= line_inblk_cnt + 1;
           end if;
+          
         else
           pix_inblk_cnt <= pix_inblk_cnt + 1;
         end if;
       end if;
       
+      if memrd_offs_cnt + (line_inblk_cnt) > C_NUM_LINES-1 then
+        memrd_line <= memrd_offs_cnt(memrd_line'range) + (line_inblk_cnt) - (C_NUM_LINES);
+      else
+        memrd_line <= memrd_offs_cnt(memrd_line'range) + (line_inblk_cnt);
+      end if;
+      
       if sof = '1' then
+        memrd_line     <= (others => '0');
+        memrd_offs_cnt <= (others => '0');
         read_block_cnt <= (others => '0');
         pix_inblk_cnt  <= (others => '0');
         line_inblk_cnt <= (others => '0');
+        rd_line_idx    <= (others => '0');
       end if;
       
     end if;
@@ -277,8 +310,8 @@ begin
     if RST = '1' then
       ramraddr_int          <= (others => '0');
     elsif CLK'event and CLK = '1' then
-      raddr_base_line <= line_inblk_cnt * unsigned(img_size_x);
-      raddr_tmp       <= (read_block_cnt & "000") + pix_inblk_cnt;
+      raddr_base_line <= (memrd_line) * unsigned(img_size_x);
+      raddr_tmp       <= (read_block_cnt_d1 & "000") + pix_inblk_cnt_d1;
     
       ramraddr_int <= raddr_tmp + raddr_base_line;
     end if;

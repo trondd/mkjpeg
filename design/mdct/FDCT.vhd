@@ -103,6 +103,7 @@ architecture RTL of FDCT is
   signal bf_dval           : std_logic;
   signal bf_dval_m1        : std_logic;
   signal bf_dval_m2        : std_logic;
+  signal bf_dval_m3        : std_logic;
   signal wr_cnt            : unsigned(5 downto 0);
   signal dbuf_data         : std_logic_vector(11 downto 0);
   signal dbuf_q            : std_logic_vector(11 downto 0);
@@ -259,9 +260,11 @@ begin
       cur_cmp_idx_d9 <= cur_cmp_idx_d8;
       start_int      <= '0';
       
-      bf_dval_m2     <= bf_fifo_rd_s;
+      bf_dval_m3     <= bf_fifo_rd_s;
+      bf_dval_m2     <= bf_dval_m3;
       bf_dval_m1     <= bf_dval_m2;
       bf_dval        <= bf_dval_m1;
+      
       fram1_rd_d     <= fram1_rd_d(fram1_rd_d'length-2 downto 0) & fram1_rd;
     
       -- SOF or internal self-start
@@ -305,7 +308,8 @@ begin
       fram1_rd       <= '0';
       -- stall reading from input FIFO and writing to output FIFO 
       -- when output FIFO is almost full
-      if rd_en = '1' and unsigned(fifo1_count) < 256-64 then
+      if rd_en = '1' and unsigned(fifo1_count) < 256-64 and 
+         (bf_fifo_hf_full = '1' or cur_cmp_idx /= 0) then
         -- read request goes to BUF_FIFO only for component 0. 
         if cur_cmp_idx = 0 then 
           bf_fifo_rd_s <= '1';
