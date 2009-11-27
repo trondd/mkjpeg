@@ -213,10 +213,19 @@ begin
         fdct_fifo_hf_full <= '0';
       end if;
       
-      if wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
-        fifo_almost_full <= '1';
+      fifo_almost_full <= '0';
+      if C_EXTRA_LINES = 0 then
+        if wr_line_idx = rd_line_idx + C_NUM_LINES-1 then
+          if pixel_cnt >= unsigned(img_size_x)-1-1 then
+            fifo_almost_full <= '1';
+          end if;
+        elsif wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
+          fifo_almost_full <= '1';
+        end if;
       else
-        fifo_almost_full <= '0';
+        if wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
+          fifo_almost_full <= '1';
+        end if;
       end if;
       
     end if;
@@ -244,11 +253,6 @@ begin
         -- last pixel in block
         if pix_inblk_cnt = 8-1 then
           pix_inblk_cnt <= (others => '0');
-
-          -- last block in line
-          --if read_block_cnt = unsigned(img_size_x(15 downto 3))-1 then
-          --  rd_line_idx <= rd_line_idx + 1;
-          --end if;
 
           -- last line in 8
           if line_inblk_cnt = 8-1 then
