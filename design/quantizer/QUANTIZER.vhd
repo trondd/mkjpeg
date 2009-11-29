@@ -40,7 +40,7 @@ entity quantizer is
       qdata      : in  std_logic_vector(7 downto 0);
       qwaddr     : in  std_logic_vector(6 downto 0);
       qwren      : in  std_logic;
-      cmp_idx    : in  unsigned(1 downto 0);
+      cmp_idx    : in  unsigned(2 downto 0);
                  
       do         : out STD_LOGIC_VECTOR(SIZE_C-1 downto 0);
       dovalid    : out STD_LOGIC
@@ -115,7 +115,7 @@ begin
         table_select <= '0';
       else
         -- luminance table select
-        if cmp_idx = 0 then
+        if cmp_idx < 2 then
           table_select <= '0';
         -- chrominance table select
         else

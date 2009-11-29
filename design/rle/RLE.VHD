@@ -62,6 +62,7 @@ architecture rtl of rle is
   signal prev_dc_reg_0   : SIGNED(RAMDATA_W-1 downto 0);
   signal prev_dc_reg_1   : SIGNED(RAMDATA_W-1 downto 0);
   signal prev_dc_reg_2   : SIGNED(RAMDATA_W-1 downto 0);
+  signal prev_dc_reg_3   : SIGNED(RAMDATA_W-1 downto 0);
   signal acc_reg         : SIGNED(RAMDATA_W downto 0);
   signal size_reg        : UNSIGNED(SIZE_REG_C-1 downto 0); 
   signal ampli_vli_reg   : SIGNED(RAMDATA_W downto 0);
@@ -95,6 +96,7 @@ begin
       prev_dc_reg_0   <= (others => '0');
       prev_dc_reg_1   <= (others => '0');
       prev_dc_reg_2   <= (others => '0');
+      prev_dc_reg_3   <= (others => '0');
       dovalid_reg     <= '0';
       acc_reg         <= (others => '0');
       runlength_reg   <= (others => '0');
@@ -141,13 +143,13 @@ begin
         if wr_cnt = 0 then
           -- differental coding of DC data per component
           case rle_sm_settings.cmp_idx is
-            when "00" =>
+            when "000" | "001" =>
               acc_reg <= RESIZE(SIGNED(di),RAMDATA_W+1) - RESIZE(prev_dc_reg_0,RAMDATA_W+1);
               prev_dc_reg_0 <= SIGNED(di);
-            when "01" =>
+            when "010" =>
               acc_reg <= RESIZE(SIGNED(di),RAMDATA_W+1) - RESIZE(prev_dc_reg_1,RAMDATA_W+1);
               prev_dc_reg_1 <= SIGNED(di);
-            when "10" =>
+            when "011" =>
               acc_reg <= RESIZE(SIGNED(di),RAMDATA_W+1) - RESIZE(prev_dc_reg_2,RAMDATA_W+1);
               prev_dc_reg_2 <= SIGNED(di);
             when others =>
@@ -229,6 +231,7 @@ begin
         prev_dc_reg_0 <= (others => '0');
         prev_dc_reg_1 <= (others => '0');
         prev_dc_reg_2 <= (others => '0');
+        prev_dc_reg_3 <= (others => '0');
       end if;
 
     end if;

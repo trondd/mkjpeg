@@ -47,7 +47,7 @@ package JPEG_PKG is
   type T_SM_SETTINGS is record
     x_cnt               : unsigned(15 downto 0);
     y_cnt               : unsigned(15 downto 0);
-    cmp_idx             : unsigned(1 downto 0);
+    cmp_idx             : unsigned(2 downto 0);
   end record;
   
   constant C_SM_SETTINGS : T_SM_SETTINGS := 

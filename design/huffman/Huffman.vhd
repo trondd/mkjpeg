@@ -55,7 +55,6 @@ entity Huffman is
         sof                : in  std_logic;
         img_size_x         : in  std_logic_vector(15 downto 0);
         img_size_y         : in  std_logic_vector(15 downto 0);
-        cmp_max            : in  std_logic_vector(1 downto 0);
         
         -- RLE
         rle_buf_sel        : out std_logic;
@@ -99,7 +98,7 @@ architecture RTL of Huffman is
   signal fifo_wrt_cnt      : unsigned(1 downto 0);
   signal fifo_wren         : std_logic;
   signal last_block        : std_logic;
-  signal image_area_size   : unsigned(33 downto 0);
+  signal image_area_size   : unsigned(31 downto 0);
   signal block_cnt         : unsigned(27 downto 0);
   signal VLC_size          : unsigned(4 downto 0);
   signal VLC               : unsigned(15 downto 0);
@@ -257,7 +256,7 @@ begin
       -- DC
       if first_rle_word = '1' then
         -- luminance
-        if huf_sm_settings.cmp_idx = 0 then
+        if huf_sm_settings.cmp_idx < 2 then
           VLC_size <= unsigned('0' & VLC_DC_size);
           VLC      <= resize(VLC_DC, VLC'length);
         -- chrominance
@@ -268,7 +267,7 @@ begin
       -- AC
       else
         -- luminance
-        if huf_sm_settings.cmp_idx = 0 then
+        if huf_sm_settings.cmp_idx < 2 then
           VLC_size <= VLC_AC_size;
           VLC      <= VLC_AC;
         -- chrominance
@@ -289,8 +288,7 @@ begin
       image_area_size <= (others => '0');
       last_block      <= '0';
     elsif CLK'event and CLK = '1' then
-      image_area_size <= unsigned(cmp_max)*
-                         unsigned(img_size_x)*unsigned(img_size_y);
+      image_area_size <= unsigned(img_size_x)*unsigned(img_size_y);
       
       if sof = '1' then
         block_cnt <= (others => '0');
@@ -298,7 +296,7 @@ begin
         block_cnt <= block_cnt + 1;
       end if;
       
-      if block_cnt = image_area_size(33 downto 6) then
+      if block_cnt = image_area_size(31 downto 5) then
         last_block <= '1';
       else
         last_block <= '0';

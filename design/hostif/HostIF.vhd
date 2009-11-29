@@ -56,8 +56,7 @@ entity HostIF is
         img_size_x         : out std_logic_vector(15 downto 0);
         img_size_y         : out std_logic_vector(15 downto 0);
         img_size_wr        : out std_logic;
-        sof                : out std_logic;
-        cmp_max            : out std_logic_vector(1 downto 0)
+        sof                : out std_logic
         
     );
 end entity HostIF;
@@ -109,8 +108,6 @@ begin
   img_size_y <= image_size_reg(15 downto 0);
   
   outram_base_addr <= cod_data_addr_reg(outram_base_addr'range);
-  
-  cmp_max <= enc_start_reg(2 downto 1);
   
   -------------------------------------------------------------------
   -- OPB read

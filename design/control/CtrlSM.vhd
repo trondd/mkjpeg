@@ -56,8 +56,7 @@ entity CtrlSM is
         img_size_y         : in  std_logic_vector(15 downto 0);
         jpeg_ready         : out std_logic;       
         jpeg_busy          : out std_logic;
-        cmp_max            : in  std_logic_vector(1 downto 0);
-        
+
         -- FDCT
         fdct_start         : out std_logic;
         fdct_ready         : in  std_logic;
@@ -107,6 +106,8 @@ architecture RTL of CtrlSM is
 
 
   constant NUM_STAGES   : integer := 6;
+  
+  constant CMP_MAX      : std_logic_vector(2 downto 0) := "100";
 
   type T_STATE is (IDLES, JFIF, HORIZ, COMP, VERT, EOI);
   type ARR_FSM is array(NUM_STAGES downto 1) of std_logic_vector(1 downto 0);
@@ -269,11 +270,11 @@ begin
         -------------------------------
         when COMP =>
           if idle(1) = '1' and start(1) = '0' then
-            if RSM.cmp_idx < unsigned(cmp_max) then
+            if RSM.cmp_idx < unsigned(CMP_MAX) then
               start(1)   <= '1';
             else
               RSM.cmp_idx    <= (others => '0');
-              RSM.x_cnt      <= RSM.x_cnt + 8;
+              RSM.x_cnt      <= RSM.x_cnt + 16;
               main_state <= HORIZ;
             end if;
           end if;

@@ -96,7 +96,7 @@ architecture RTL of FDCT is
   signal x_pixel_cnt       : unsigned(15 downto 0);
   signal y_line_cnt        : unsigned(15 downto 0);
   signal rd_addr           : std_logic_vector(31 downto 0);
-  signal input_rd_cnt      : unsigned(5 downto 0);
+  signal input_rd_cnt      : unsigned(6 downto 0);
   signal rd_en             : std_logic;
   signal rd_en_d1          : std_logic;
   signal rdaddr            : unsigned(31 downto 0);
@@ -134,41 +134,47 @@ architecture RTL of FDCT is
   signal Y_8bit            : unsigned(7 downto 0);
   signal Cb_8bit           : unsigned(7 downto 0);
   signal Cr_8bit           : unsigned(7 downto 0);
-  signal cmp_idx           : unsigned(1 downto 0);
-  signal cur_cmp_idx       : unsigned(1 downto 0);
-  signal cur_cmp_idx_d1    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d2    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d3    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d4    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d5    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d6    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d7    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d8    : unsigned(1 downto 0);
-  signal cur_cmp_idx_d9    : unsigned(1 downto 0);
+  signal cmp_idx           : unsigned(2 downto 0);
+  signal cur_cmp_idx       : unsigned(2 downto 0);
+  signal cur_cmp_idx_d1    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d2    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d3    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d4    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d5    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d6    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d7    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d8    : unsigned(2 downto 0);
+  signal cur_cmp_idx_d9    : unsigned(2 downto 0);
   signal fifo1_rd          : std_logic;
   signal fifo1_wr          : std_logic;
   signal fifo1_q           : std_logic_vector(11 downto 0);
   signal fifo1_full        : std_logic;
   signal fifo1_empty       : std_logic;
-  signal fifo1_count       : std_logic_vector(8 downto 0);
+  signal fifo1_count       : std_logic_vector(9 downto 0);
   signal fifo1_rd_cnt      : unsigned(5 downto 0);
   signal fifo1_q_dval      : std_logic;
   signal fifo_data_in      : std_logic_vector(11 downto 0);
   signal fifo_rd_arm       : std_logic;
   
   signal eoi_fdct          : std_logic;
-  signal bf_fifo_rd_s         : std_logic;
+  signal bf_fifo_rd_s      : std_logic;
   signal start_int         : std_logic;
+  signal start_int_d       : std_logic_vector(4 downto 0);
   
   signal fram1_data        : std_logic_vector(23 downto 0);
   signal fram1_q           : std_logic_vector(23 downto 0);
   signal fram1_we          : std_logic;
-  signal fram1_waddr       : std_logic_vector(5 downto 0);
-  signal fram1_raddr       : std_logic_vector(5 downto 0);
+  signal fram1_waddr       : std_logic_vector(6 downto 0);
+  signal fram1_raddr       : std_logic_vector(6 downto 0);
   signal fram1_rd_d        : std_logic_vector(8 downto 0);
   signal fram1_rd          : std_logic;  
   signal rd_started        : std_logic;
   signal writing_en        : std_logic;
+  signal fram1_q_vld       : std_logic;
+  
+  signal fram1_line_cnt    : unsigned(2 downto 0);
+  signal fram1_pix_cnt     : unsigned(2 downto 0);
+  
   
 -------------------------------------------------------------------------------
 -- Architecture: begin
@@ -185,7 +191,7 @@ begin
   U_FRAM1 : entity work.RAMZ
   generic map
   ( 
-      RAMADDR_W     => 6,
+      RAMADDR_W     => 7,
       RAMDATA_W     => 24
   )
   port map
@@ -201,6 +207,8 @@ begin
   
   fram1_we   <= bf_dval;
   fram1_data <= bf_fifo_q;
+  
+  fram1_q_vld <= fram1_rd_d(5);
   
   -------------------------------------------------------------------
   -- FRAM1 process
@@ -246,7 +254,10 @@ begin
       bf_dval_m2      <= '0';
       fram1_rd        <= '0';
       fram1_rd_d      <= (others => '0');
+      start_int_d     <= (others => '0');
       fram1_raddr     <= (others => '0');
+      fram1_line_cnt  <= (others => '0');
+      fram1_pix_cnt   <= (others => '0');
     elsif CLK'event and CLK = '1' then
       rd_en_d1 <= rd_en;
       cur_cmp_idx_d1 <= cur_cmp_idx;
@@ -266,18 +277,19 @@ begin
       bf_dval        <= bf_dval_m1;
       
       fram1_rd_d     <= fram1_rd_d(fram1_rd_d'length-2 downto 0) & fram1_rd;
+      start_int_d    <= start_int_d(start_int_d'length-2 downto 0) & start_int;
     
       -- SOF or internal self-start
       if (sof = '1' or start_int = '1') then
         input_rd_cnt <= (others => '0');
         -- enable BUF_FIFO/FRAM1 reading
-        rd_started <= '1';       
+        rd_started      <= '1'; 
         
         -- component index
-        if cmp_idx = 3-1 then
+        if cmp_idx = 4-1 then
           cmp_idx <= (others => '0');
           -- horizontal block counter
-          if x_pixel_cnt = unsigned(img_size_x)-8 then
+          if x_pixel_cnt = unsigned(img_size_x)-16 then
             x_pixel_cnt <= (others => '0');
             -- vertical block counter
             if y_line_cnt = unsigned(img_size_y)-8 then
@@ -288,18 +300,19 @@ begin
               y_line_cnt <= y_line_cnt + 8;
             end if;
           else
-            x_pixel_cnt <= x_pixel_cnt + 8;
+            x_pixel_cnt <= x_pixel_cnt + 16;
           end if;
         else
           cmp_idx <=cmp_idx + 1;
         end if;
         
         cur_cmp_idx     <= cmp_idx;
+        
       end if;
       
       -- wait until FIFO becomes half full but only for component 0
       -- as we read buf FIFO only during component 0
-      if rd_started = '1' and (bf_fifo_hf_full = '1' or cur_cmp_idx /= 0) then
+      if rd_started = '1' and (bf_fifo_hf_full = '1' or cur_cmp_idx > 1) then
         rd_en      <= '1';
         rd_started <= '0';
       end if;
@@ -308,10 +321,10 @@ begin
       fram1_rd       <= '0';
       -- stall reading from input FIFO and writing to output FIFO 
       -- when output FIFO is almost full
-      if rd_en = '1' and unsigned(fifo1_count) < 256-64 and 
-         (bf_fifo_hf_full = '1' or cur_cmp_idx /= 0) then
+      if rd_en = '1' and unsigned(fifo1_count) < 512-64 and 
+         (bf_fifo_hf_full = '1' or cur_cmp_idx > 1) then
         -- read request goes to BUF_FIFO only for component 0. 
-        if cur_cmp_idx = 0 then 
+        if cur_cmp_idx < 2 then 
           bf_fifo_rd_s <= '1';
         end if;
         
@@ -328,9 +341,61 @@ begin
         fram1_rd <= '1';
       end if;
 
-      -- increment FRAM1 read address
-      if fram1_rd_d(4) = '1' then
-        fram1_raddr <= std_logic_vector(unsigned(fram1_raddr) + 1);
+      -- increment FRAM1 read address according to subsampling
+      -- idea is to extract 8x8 from 16x8 block
+      -- there are two luminance blocks left and right
+      -- there is 2:1 subsampled Cb block
+      -- there is 2:1 subsampled Cr block
+      -- subsampling done as simple decimation by 2 wo/ averaging
+      if sof = '1' then
+        fram1_raddr     <= (others => '0');
+        fram1_line_cnt  <= (others => '0');
+        fram1_pix_cnt   <= (others => '0');
+      elsif start_int_d(4) = '1' then
+        fram1_line_cnt  <= (others => '0');
+        fram1_pix_cnt   <= (others => '0');
+        case cur_cmp_idx_d4 is
+          -- Y1, Cr, Cb
+          when "000" | "010" | "011" => 
+            fram1_raddr <= (others => '0');
+          -- Y2
+          when "001" => 
+            fram1_raddr <= std_logic_vector(to_unsigned(64, fram1_raddr'length));
+          when others =>
+            null;
+        end case;
+      elsif fram1_rd_d(4) = '1' then 
+      
+        if fram1_pix_cnt = 8-1 then
+          fram1_pix_cnt <= (others => '0');
+          if fram1_line_cnt = 8-1 then
+            fram1_line_cnt <= (others => '0');
+          else
+            fram1_line_cnt <= fram1_line_cnt + 1;
+          end if;
+        else
+          fram1_pix_cnt <= fram1_pix_cnt + 1;
+        end if;
+        
+        case cur_cmp_idx_d6 is
+          when "000" | "001" => 
+            fram1_raddr <= std_logic_vector(unsigned(fram1_raddr) + 1);
+          when "010" | "011" => 
+            if fram1_pix_cnt = 4-1 then
+              fram1_raddr <= std_logic_vector('1' & fram1_line_cnt & "000");
+            elsif fram1_pix_cnt = 8-1 then
+              if fram1_line_cnt = 8-1 then
+                fram1_raddr <= '0' & "000" & "000";
+              else
+                fram1_raddr <= std_logic_vector('0' & (fram1_line_cnt+1) & "000");
+              end if;
+            else
+              fram1_raddr <= std_logic_vector(unsigned(fram1_raddr) + 2);
+            end if;
+          when others =>
+            null;
+        end case;
+      
       end if;
       
     end if;
@@ -367,11 +432,11 @@ begin
       mdct_data_in <= (others => '0');
     elsif CLK'event and CLK = '1' then
       case cur_cmp_idx_d9 is
-        when "00" => 
+        when "000" | "001" => 
           mdct_data_in <= std_logic_vector(Y_8bit);
-        when "01" => 
+        when "010" => 
           mdct_data_in <= std_logic_vector(Cb_8bit);
-        when "10" => 
+        when "011" => 
           mdct_data_in <= std_logic_vector(Cr_8bit);
         when others =>
           null;
@@ -387,7 +452,7 @@ begin
   generic map
   (
         DATA_WIDTH        => 12,
-        ADDR_WIDTH        => 8
+        ADDR_WIDTH        => 9
   )
   port map 
   (        

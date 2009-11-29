@@ -133,7 +133,6 @@ architecture RTL of JpegEnc is
   signal rle_sm_settings    : T_SM_SETTINGS;
   signal huf_sm_settings    : T_SM_SETTINGS;
   signal bs_sm_settings     : T_SM_SETTINGS;
-  signal cmp_max            : std_logic_vector(1 downto 0);
   signal image_size_reg     : std_logic_vector(31 downto 0);
   signal jfif_ram_byte      : std_logic_vector(7 downto 0);
   signal jfif_ram_wren      : std_logic;
@@ -192,8 +191,7 @@ begin
         img_size_x         => img_size_x,
         img_size_y         => img_size_y,
         img_size_wr        => img_size_wr,
-        sof                => sof,
-        cmp_max            => cmp_max
+        sof                => sof
     );
     
   -------------------------------------------------------------------
@@ -238,7 +236,6 @@ begin
         img_size_y         => img_size_y,
         jpeg_ready         => jpeg_ready,
         jpeg_busy          => jpeg_busy,
-        cmp_max            => cmp_max,
 
         -- FDCT
         fdct_start         => fdct_start,
@@ -411,7 +408,6 @@ begin
         sof                => sof,
         img_size_x         => img_size_x,
         img_size_y         => img_size_y,
-        cmp_max            => cmp_max,
 
         -- RLE
         rle_buf_sel        => huf_buf_sel,

@@ -82,8 +82,8 @@ architecture RTL of BUF_FIFO is
   signal ramenw           : STD_LOGIC;
   signal ramraddr         : unsigned(log2(C_MAX_LINE_WIDTH*C_NUM_LINES)-1 downto 0);
   
-  signal pix_inblk_cnt    : unsigned(2 downto 0);
-  signal pix_inblk_cnt_d1 : unsigned(2 downto 0);
+  signal pix_inblk_cnt    : unsigned(3 downto 0);
+  signal pix_inblk_cnt_d1 : unsigned(3 downto 0);
   signal line_inblk_cnt   : unsigned(2 downto 0);
   
   signal read_block_cnt   : unsigned(12 downto 0);
@@ -214,19 +214,14 @@ begin
       end if;
       
       fifo_almost_full <= '0';
-      if C_EXTRA_LINES = 0 then
-        if wr_line_idx = rd_line_idx + C_NUM_LINES-1 then
-          if pixel_cnt >= unsigned(img_size_x)-1-1 then
-            fifo_almost_full <= '1';
-          end if;
-        elsif wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
+      if wr_line_idx = rd_line_idx + C_NUM_LINES-1 then
+        if pixel_cnt >= unsigned(img_size_x)-1-1 then
           fifo_almost_full <= '1';
         end if;
-      else
-        if wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
-          fifo_almost_full <= '1';
-        end if;
+      elsif wr_line_idx > rd_line_idx + C_NUM_LINES-1 then
+        fifo_almost_full <= '1';
       end if;
+
       
     end if;
   end process;
