@@ -32,7 +32,7 @@ package JPEG_PKG is
   -- warning! this parameter heavily affects memory size required
   -- if expected image width is known change this parameter to match this
   -- otherwise some onchip RAM will be wasted and never used
-  constant C_MAX_LINE_WIDTH   : integer := 1280;
+  constant C_MAX_LINE_WIDTH   : integer := 2048;
   
   -- memory/performance tradeoff
   -- 8 extra lines highest performance
@@ -40,9 +40,13 @@ package JPEG_PKG is
   constant C_EXTRA_LINES  : integer := 8; -- from 0 to 8
 
   
-  -- 24 bit format RGB 888 bits
-  -- 16 bit format RGB 565 bits
+  -- 24 bit format RGB/YCbCr 888 bits
+  -- 16 bit format RGB/YCbCr 565 bits
   constant C_PIXEL_BITS    : integer := 24;
+  
+  -- 0 = RGB
+  -- 1 = YUV/YCbCr
+  constant C_YUV_INPUT  : std_logic := '0';
   
   type T_SM_SETTINGS is record
     x_cnt               : unsigned(15 downto 0);

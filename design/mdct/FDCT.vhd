@@ -568,22 +568,34 @@ begin
       Cb_Reg   <= (others => '0');
       Cr_Reg   <= (others => '0');
     elsif CLK'event and CLK = '1' then
-      Y_Reg_1  <= R_s*C_Y_1;
-      Y_Reg_2  <= G_s*C_Y_2;
-      Y_Reg_3  <= B_s*C_Y_3;
-      
-      Cb_Reg_1 <= R_s*C_Cb_1;
-      Cb_Reg_2 <= G_s*C_Cb_2;
-      Cb_Reg_3 <= B_s*C_Cb_3;
-      
-      Cr_Reg_1 <= R_s*C_Cr_1;
-      Cr_Reg_2 <= G_s*C_Cr_2;
-      Cr_Reg_3 <= B_s*C_Cr_3;
-      
-      Y_Reg  <= Y_Reg_1 + Y_Reg_2 + Y_Reg_3;
-      Cb_Reg <= Cb_Reg_1 + Cb_Reg_2 + Cb_Reg_3 + to_signed(128*16384,Cb_Reg'length);
-      Cr_Reg <= Cr_Reg_1 + Cr_Reg_2 + Cr_Reg_3 + to_signed(128*16384,Cr_Reg'length);
-
+      -- RGB input
+      if C_YUV_INPUT = '0' then
+        Y_Reg_1  <= R_s*C_Y_1;
+        Y_Reg_2  <= G_s*C_Y_2;
+        Y_Reg_3  <= B_s*C_Y_3;
+        
+        Cb_Reg_1 <= R_s*C_Cb_1;
+        Cb_Reg_2 <= G_s*C_Cb_2;
+        Cb_Reg_3 <= B_s*C_Cb_3;
+        
+        Cr_Reg_1 <= R_s*C_Cr_1;
+        Cr_Reg_2 <= G_s*C_Cr_2;
+        Cr_Reg_3 <= B_s*C_Cr_3;
+        
+        Y_Reg  <= Y_Reg_1 + Y_Reg_2 + Y_Reg_3;
+        Cb_Reg <= Cb_Reg_1 + Cb_Reg_2 + Cb_Reg_3 + to_signed(128*16384,Cb_Reg'length);
+        Cr_Reg <= Cr_Reg_1 + Cr_Reg_2 + Cr_Reg_3 + to_signed(128*16384,Cr_Reg'length);
+      -- YCbCr input
+      -- R-G-B misused as Y-Cb-Cr
+      else
+        Y_Reg_1  <= '0' & R_s & "00000000000000";
+        Cb_Reg_1 <= '0' & G_s & "00000000000000";
+        Cr_Reg_1 <= '0' & B_s & "00000000000000";
+        
+        Y_Reg  <= Y_Reg_1; 
+        Cb_Reg <= Cb_Reg_1;
+        Cr_Reg <= Cr_Reg_1;
+      end if;
     end if;
   end process;
   
