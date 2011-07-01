@@ -79,26 +79,26 @@ vcom ../design/huffman/AC_CR_ROM.vhd
 vcom ../design/huffman/Huffman.vhd
 
 # bytestuffer
-vcom ../design/bytestuffer/ByteStuffer.vhd
+vcom ../design/bytestuffer.vhd
 
 # control
-vcom ../design/control/CtrlSM.vhd
+vcom ../design/ctrlsm.vhd
 
 # HostIF
-vcom ../design/hostif/HostIF.vhd
+vcom ../design/hostif.vhd
 
 # IRamIF
-vcom ../design/iramif/IRAMIF.vhd
+vcom ../design/iramif.vhd
 
 # jfifgen
 vlog ../design/jfifgen/HeaderRam.v
 vcom ../design/jfifgen/JFIFGen.vhd
 
 # outmux
-vcom ../design/outmux/OutMux.vhd
+vcom ../design/outmux.vhd
 
 # top
-vcom ../design/top/JpegEnc.vhd
+vcom ../design/JpegEnc.vhd
 
 # testbench
 vcom vhdl/ramsim.vhd
